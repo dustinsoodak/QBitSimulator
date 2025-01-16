@@ -1,7 +1,7 @@
 # QBitSimulator
 Quantum computer simulator with a visual representation of the data
 
-Unfortunately, I mostly made this for myself so I could understand the transition between the quantum and classical worlds a bit better, so it probably isn't super user friendly.  A couple of people have expressed interest in it so I've decided to post it publically. A preliminary version of a tutorial is pasted below:
+Unfortunately, I mostly made this for myself so I could understand the transition between the quantum and classical worlds a bit better, so it probably isn't super user friendly.  A couple of people have expressed interest in it so I've decided to post it publically. A preliminary version of a tutorial is pasted below. Since there doesn't seem to be a way to turn off Github's creative reinterpretation of newlines, you will have to press "code" or "raw" to see the ASCII diagrams correctly.
 
 
 
