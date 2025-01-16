@@ -1,0 +1,2396 @@
+<!DOCTYPE html>
+<style>
+    #myCanvas {
+        border-width: 1px;
+        border-style: dotted;
+        border-color: Gray;
+    }
+
+    h1 {
+        font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+        font-size: x-large;
+        color: #999999;
+    }
+
+    body {
+        background-color: #FFF;
+        padding: 40px;
+    }
+
+    p {
+        font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+        font-size: 11px;
+    }
+
+    a {
+        color: #3E99CA;
+        text-decoration: none;
+    }
+
+    a:hover {
+        background-color: #E2F0F8;
+        border-radius: 2px;
+    }
+    
+    p { 
+     color: #FFFFFF; 
+    } 
+    
+</style>
+<head>
+<meta name="viewport" content="width=device-width">
+ <meta charset="UTF-8">
+<title>Dustin's QBits</title>
+</head>
+
+
+
+
+<script>
+    /*
+    <svg id="TransRecordSvg" height="1000" width="1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    </svg>
+    */
+
+
+
+
+
+
+    QGateSpacingVert=30;
+    QGateSpacingHor=30;
+    QGateXOffset=20;
+    QGateYOffset=20;
+    QGateCircleRadius=8;
+    QGateTotalBits=3;
+    TransRecordSvgBkColor="white";
+    // TransRecordLine initialized elsewhere
+
+    function AddLineToSvg(SvgElement,Points,color="red",width=1){
+        var svgns = "http://www.w3.org/2000/svg";
+        //var SvgElement = document.getElementById( 'cont' );
+        var newLine = document.createElementNS(svgns,'line');
+        for(var i=1;i<Points.length;i++){
+            newLine.setAttribute('id','line2');
+            newLine.setAttribute('x1',''+Points[i-1][0]);
+            newLine.setAttribute('y1',''+Points[i-1][1]);
+            newLine.setAttribute('x2',''+Points[i][0]);
+            newLine.setAttribute('y2',''+Points[i][1]);
+            newLine.setAttribute("stroke", color);
+            newLine.setAttribute("stroke-width", width);            
+        }
+        SvgElement.appendChild(newLine);
+    }
+
+
+
+    function AddTextToSvgMiddle(SvgElement,X,Y,Text,Selectable=true){
+        var svgNS = "http://www.w3.org/2000/svg";
+        var newText = document.createElementNS(svgNS,"text");
+        newText.setAttributeNS(null,"x",X);     
+        newText.setAttributeNS(null,"y",Y+3); 
+        newText.setAttributeNS(null,"font-size","12");
+        newText.setAttributeNS(null,"fill","red");
+        newText.setAttributeNS(null,"text-anchor","middle" );
+        /*if(Selectable==false){
+            newText.setAttributeNS(null, 'style', 'pointer-events: none' );       
+            
+            newText.setAttributeNS(null, '-webkit-touch-callout', 'none' );  
+            newText.setAttributeNS(null, '-webkit-user-select', 'none' );  
+            newText.setAttributeNS(null, '-moz-user-select', 'none' );  
+            newText.setAttributeNS(null, '-moz-user-select', 'none' );  
+            newText.setAttributeNS(null, '-ms-user-select', 'none' );  
+            newText.setAttributeNS(null, 'user-select', 'none' );  
+           
+
+
+        }    */
+        var textNode = document.createTextNode(Text);
+        newText.appendChild(textNode);
+        SvgElement.appendChild(newText);
+    }
+    function AddTextToSvgLeft(SvgElement,X,Y,Text,Selectable=true){
+        var svgNS = "http://www.w3.org/2000/svg";
+        var newText = document.createElementNS(svgNS,"text");
+        newText.setAttributeNS(null,"x",X);     
+        newText.setAttributeNS(null,"y",Y+3); 
+        newText.setAttributeNS(null,"font-size","12");
+        newText.setAttributeNS(null,"fill","red");
+        newText.setAttributeNS(null,"text-anchor","left" );
+        if(Selectable==false)
+            newText.setAttributeNS(null, 'style', 'pointer-events: none' ); 
+        var textNode = document.createTextNode(Text);
+        newText.appendChild(textNode);
+        SvgElement.appendChild(newText);
+    }
+    function AddCircleToSvg(SvgElement,X,Y,R,Filled){
+        var svgns = "http://www.w3.org/2000/svg";
+        var circle = document.createElementNS(svgns, 'circle');
+        circle.setAttributeNS(null, 'cx', X);
+        circle.setAttributeNS(null, 'cy', Y);
+        circle.setAttributeNS(null, 'r', R);
+        if(Filled==1){
+            circle.setAttributeNS(null, 'style', 'fill: green; stroke: green; stroke-width: 1px;' );
+        }
+        else{
+            if(TransRecordSvgBkColor!="")
+                circle.setAttributeNS(null, 'style', 'fill: '+TransRecordSvgBkColor+'; stroke: green; stroke-width: 1px;' );
+            else
+                circle.setAttributeNS(null, 'style', 'fill: none; stroke: green; stroke-width: 1px;' );
+        }
+        SvgElement.appendChild(circle);
+    }
+
+    function AddQGateNodeInputToSvg(SvgElement,X,Y,Number){    
+        if(Number===0){
+            //console.log("Number is 0");
+            AddCircleToSvg(SvgElement,X,Y,QGateCircleRadius,true);
+        }
+        else if(Number===""){
+            AddCircleToSvg(SvgElement,X,Y,QGateCircleRadius,false);
+        }
+        else{
+            AddCircleToSvg(SvgElement,X,Y,QGateCircleRadius,false);
+            //console.log("Number is "+Number);
+            AddTextToSvgMiddle(SvgElement,X,Y,""+Number,false);//
+        }
+    }
+    QGateSvgList=[];
+    function AddQGateToSvg(SvgElement,BitNumList,Name,LineNum){
+        //console.log("circle filled color: "+TransRecordSvgBkColor);
+        for(var i=0;i<QGateTotalBits;i++){
+            AddLineToSvg(SvgElement,[[QGateXOffset+i*QGateSpacingHor,QGateYOffset+LineNum*QGateSpacingVert],[QGateXOffset+i*QGateSpacingHor,QGateYOffset+(LineNum+1)*QGateSpacingVert]],"blue");
+        }
+        var ar=[];
+        for(var i=0;i<BitNumList.length;i++){
+            ar[i]=[BitNumList[i],i];
+        }
+        //console.log("ar: "+JSON.stringify(ar));     
+        ar.sort();
+        //console.log("ar: "+JSON.stringify(ar));     
+        var bit_num,input_num;
+        for(var n=0;n<ar.length;n++){
+            input_num=ar[n][1];            
+            bit_num=ar[n][0];
+            if(input_num==1 && BitNumList.length==2)
+                AddQGateNodeInputToSvg(SvgElement,QGateXOffset+bit_num*QGateSpacingHor,QGateYOffset+LineNum*QGateSpacingVert,"");
+            else
+                AddQGateNodeInputToSvg(SvgElement,QGateXOffset+bit_num*QGateSpacingHor,QGateYOffset+LineNum*QGateSpacingVert,input_num);
+            if(n>0){
+                i_prev=ar[n-1][1];
+                AddLineToSvg(SvgElement,[[QGateXOffset+(ar[n-1][0])*QGateSpacingHor+QGateCircleRadius,QGateYOffset+LineNum*QGateSpacingVert],[QGateXOffset+(bit_num)*QGateSpacingHor-QGateCircleRadius,QGateYOffset+LineNum*QGateSpacingVert]],TransRecordSvgBkColor,3);
+                AddLineToSvg(SvgElement,[[QGateXOffset+(ar[n-1][0])*QGateSpacingHor+QGateCircleRadius,QGateYOffset+LineNum*QGateSpacingVert],[QGateXOffset+(bit_num)*QGateSpacingHor-QGateCircleRadius,QGateYOffset+LineNum*QGateSpacingVert]]);
+            }
+        }
+        AddTextToSvgLeft(SvgElement,QGateXOffset+(QGateTotalBits)*QGateSpacingHor,QGateYOffset+LineNum*QGateSpacingVert,Name+"("+BitNumList.join(",")+")");
+        AddTextToSvgLeft(SvgElement,QGateXOffset+(QGateTotalBits)*QGateSpacingHor,QGateYOffset+LineNum*QGateSpacingVert+QGateSpacingVert/2,QSystemToMath(QSystem));
+        
+        QGateSvgList.push({"Name": Name, "Inputs": BitNumList,"Result": CopyQSystem(QSystem)});//dustin
+        
+    }
+    
+    function TransRecordCopy(){
+        var copyText="";
+        for(var i in QGateSvgList){
+            //console.log("svg row "+JSON.stringify(QGateSvgList));
+            copyText+=QGateSvgList[i].Name+"("+QGateSvgList[i].Inputs.join(",")+")"+"<br>"+QSystemToMath(QGateSvgList[i].Result)+"<br>";
+        }
+        var el=document.getElementById("TransRecordText");//can't be hidden or won't copy.,.
+        el.innerHTML=copyText;
+        //console.log("copy text: "+copyText);
+        copyDivToClipboard(el);
+        el.innerHTML="";
+    }
+
+    function ClearSvgElement(SvgElement){
+        var  children = SvgElement.children, el;
+        for (var  i=0;i<children.length;){
+            let el = children[i];
+            if (el.tagName!=='defs'){
+                el.remove();
+            }
+            else
+                i++;
+        }
+        QGateSvgList=[];
+    }
+
+
+
+    
+
+    // https://codereview.stackexchange.com/questions/40145/making-lines-with-svg-and-javascript
+
+    /*
+    container = document.getElementById( 'cont' );
+    AddQGateToSvg(container,[1,2,0],"TOF",0);
+    */
+
+
+
+
+
+
+</script>
+
+
+
+<body onload="onload()"> 
+<body style="background-color:darkgray;">
+<h1>Qbits</h1>
+Transform: 
+<select id="QuantumGateSelect" onchange="SelectQuantumGate()">
+</select> 
+<button type="button" onclick="NormalizeTransfromButtonHandler()">Norm Trans</button>&nbsp&nbsp
+<button type="button" onclick="SimplifyButtonHandler()">Simplify</button>&nbsp&nbsp&nbsp&nbsp
+<button type="button" onclick="PrintQTransformsPrint()">Print All</button>
+<button type="button" onclick="PrintQTransformsSave()">Save</button>
+<button type="button" onclick="PrintQTransformsReset()">Reset</button>
+
+<br>
+<textarea id="TransformationData" rows=3 cols=50 onchange="EditTransformTextHandler()">[
+["0", [[1,"0"],[1,"1"]]],
+["1", [[1,"0"],[-1,"1"]]]
+]</textarea>
+<button type="button" onclick="document.getElementById('TransformationData').select()">Sel</button>
+<pre id="MatrixForm" style="display: inline-block"></pre>
+<br>
+<pre id="TransformationDataMathematical" style="display: inline-block"></pre>
+<br>
+Bits: <input type="text" id="QbitPositionList" value="[0]"/> 
+<button type="button" onclick="ClearBits()">Clr</button> &nbsp
+<button type="button" onclick="ApplySpecifiedTransformation()">Apply Transformation</button>&nbsp&nbsp
+<input type="checkbox" id="AutoApplyTransform" onclick="AutoApplyTransformHandler()">Auto &nbsp&nbsp&nbsp&nbsp
+<input type="checkbox" id="PrintShortForm" onclick="PrintShortFormHandler()">Print Short Form &nbsp&nbsp&nbsp&nbsp
+<input type="checkbox" id="ShowAmplitudeSquared" onclick="ShowAmplitudeSquaredHandler()"> Ampl Squared &nbsp&nbsp&nbsp&nbsp
+<br><br>
+<button type="button" onclick="NormalizeButtonHandler()">Norm QSys</button>
+ &nbsp&nbsp&nbsp&nbsp<button type="button" onclick="ReZeroQSystem()">Zero QSystem</button>
+ &nbsp&nbsp&nbsp&nbsp<input type="checkbox" id="TransRecord" onclick="TransRecordHandler()">Record 
+ &nbsp&nbsp&nbsp Round,Prec: <input type="text" id="QbitPrecision" value="5,3" size="5" onchange="UpdatePrecision()"/> 
+ <pre id="QbitPrecisionLabel" style="display: inline-block"></pre>
+<br><br>
+<pre id="EntropyDisplay" style="display: inline-block"></pre><br>
+<button type="button" onclick="TransRecordCopy()">Copy</button>
+<div id="container" style="white-space:nowrap;">
+<canvas id="myCanvas" height="500" width="400" style="display:inline-block;"></canvas>
+<svg id="TransRecordSvg" height="1000" width="100%" style="display:inline-block;background-color:gray;"  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"></svg>
+<div id="TransRecordText" style="display:inline-block;"></div>
+</div>
+
+ 
+
+<button type="button" onclick="StatesCopy()">Copy</button>
+<pre id="StatesTextDisplay" style="display: inline-block"></pre><br>
+<pre id="StatesTextDisplayMathematical" style="display: inline-block"></pre>
+<br>
+<button type="button" onclick="TransformCopy()">Copy</button>
+<pre id="TransformTextDisplay" style="display: inline-block"></pre><br>
+<pre id="TransformTextDisplayMathematical" style="display: inline-block"></pre>
+<br>
+<textarea id="OutputTextArea" rows=5 cols=50></textarea>
+<button type="button" onclick="document.getElementById('OutputTextArea').select()">Sel</button>
+<br>
+<button type="button" id="CalculateButton" onclick="Calculate()">Calculate</button>
+&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+<button type="button" id="CreateNewTransformButton" onclick="CreateNewTransform()">Create New Transform</button>
+<br><br>
+<script>
+
+//https://stackoverflow.com/questions/36639681/how-to-copy-text-from-a-div-to-clipboard/51261023
+function copyDivToClipboard(id) {
+                    var range = document.createRange();
+                    range.selectNode(id);
+                    window.getSelection().removeAllRanges(); // clear current selection
+                    window.getSelection().addRange(range); // to select text
+                    document.execCommand("copy");
+                    window.getSelection().removeAllRanges();// to deselect
+                }
+function StatesCopy(){
+    var copyText = document.getElementById("StatesTextDisplay");
+    copyDivToClipboard(copyText);
+    //copyText.select();
+    //copyText.setSelectionRange(0, 99999); //For mobile devices
+    //document.execCommand("copy");
+}
+function TransformCopy(){
+    var copyText = document.getElementById("TransformTextDisplay");
+    copyDivToClipboard(copyText);
+    //copyText.select();
+    //copyText.setSelectionRange(0, 99999); //For mobile devices
+    //document.execCommand("copy");
+}
+//
+AutoApplyTransform=false;
+function AutoApplyTransformHandler(){
+    var checkBox = document.getElementById("AutoApplyTransform");
+    if(!AutoApplyTransform && checkBox.checked){
+        ClearBits();
+    }
+    AutoApplyTransform=checkBox.checked;// true/false
+}
+document.getElementById("AutoApplyTransform").checked=true;
+AutoApplyTransformHandler();
+
+PrintShortForm=false;
+function PrintShortFormHandler(){
+    var checkBox = document.getElementById("PrintShortForm");
+    PrintShortForm=checkBox.checked;// true/false
+}
+document.getElementById("PrintShortForm").checked=true;
+PrintShortFormHandler();
+
+ShowAmplitudeSquared=false;
+function ShowAmplitudeSquaredHandler(){
+    var checkBox = document.getElementById("ShowAmplitudeSquared");
+    ShowAmplitudeSquared=checkBox.checked;
+    QSystemUpdated=true;
+}
+
+TransRecord=false;
+function TransRecordHandler(){
+    var checkBox = document.getElementById("TransRecord");
+    TransRecord=checkBox.checked;
+}
+document.getElementById("TransRecord").checked=true;
+TransRecordHandler();
+
+//To get rid of tap delay(https://developers.google.com/web/updates/2013/12/300ms-tap-delay-gone-away):
+//<meta name="viewport" content="width=device-width">
+//
+//to do: figure out how "entropy of entanglement" works and make a second view where
+//you see qbits in a circle with entanglement links displayed somehow.
+// - sum of pi log(pi)
+//28 minutes into https://www.youtube.com/watch?v=WQU9yOtWrQk
+QSystem={"states": [[1,"0"],[0,"1"]],"names": ["a"]};
+QTransformsDefault={//QTransformsDefault
+"Not"://0->1, 1->0
+    [ ["0", [[1,"1"]]], 
+    ["1", [[1,"0"]]] ]
+,
+"CNot"://00->00, 01->01, 10->11, 11->10
+     [ ["00", [[1,"00"]]], 
+       ["01", [[1,"01"]]],
+       ["10", [[1,"11"]]],
+       ["11", [[1,"10"]]] ]
+,
+"X":
+    [
+    ["0", [[1,"1"]]],
+    ["1", [[1,"0"]]]
+    ]
+,
+"Y":
+    [
+    ["0", [[1,"0"]]],
+    ["1", [[[0,-1],"1"]]]
+    ]
+,
+"Z":
+    [
+    ["0", [[1,"0"]]],
+    ["1", [[-1,"1"]]]
+    ]
+,
+"RotC":
+    [
+    ["0", [[[0,1],"0"]]],
+    ["1", [[[0,1],"1"]]]
+    ]
+,
+"Had"://0->0+1, 1->0-1
+    [ ["0", [[1,"0"],[1,"1"]]], 
+      ["1", [[1,"0"],[-1,"1"]]] ]
+,
+"CHad"://00->00, 01->01, 10->11, 11->10
+    [ ["00", [[1,"00"]]],
+      ["01", [[1,"01"]]],
+      ["10", [[1,"10"],[1,"11"]]],
+      ["11", [[1,"10"],[-1,"11"]]] ]
+,
+"Tof"://000,001,010,011,100,101 -> same, 110->111, 111->110
+    [
+    ["000", [[1,"000"]]],
+    ["001", [[1,"001"]]],
+    ["010", [[1,"010"]]],
+    ["011", [[1,"011"]]],
+    ["100", [[1,"100"]]],
+    ["101", [[1,"101"]]],
+    ["110", [[1,"111"]]],
+    ["111", [[1,"110"]]]
+    ]
+,
+"C3Not":
+    [
+    ["0000", [[1,"0000"]]],
+    ["0001", [[1,"0001"]]],
+    ["0010", [[1,"0010"]]],
+    ["0011", [[1,"0011"]]],
+    ["0100", [[1,"0100"]]],
+    ["0101", [[1,"0101"]]],
+    ["0110", [[1,"0110"]]],
+    ["0111", [[1,"0111"]]],
+    ["1000", [[1,"1000"]]],
+    ["1001", [[1,"1001"]]],
+    ["1010", [[1,"1010"]]],
+    ["1011", [[1,"1011"]]],
+    ["1100", [[1,"1100"]]],
+    ["1101", [[1,"1101"]]],
+    ["1110", [[1,"1111"]]],
+    ["1111", [[1,"1110"]]]
+    ]
+,
+"Rot2"://"0"->0.70710678118"0"+0.70710678118"1", "1"->-0.70710678118"0"+0.70710678118"1"
+      //cos(pi/2/2)   sin(pi/2/2)
+    [
+    ["0", [[0.7071067811865477,"0"],[0.7071067811865477,"1"]]],
+    ["1", [[-0.7071067811865477,"0"],[0.7071067811865477,"1"]]]
+    ]
+,
+"CRot2"://"00"->"00", "01"->"01"
+       //"10"->0.70710678118"10"+0.70710678118"11", "11"->-0.70710678118"10"+0.70710678118"11"
+    [
+    ["00", [[1,"00"]]],
+    ["01", [[1,"01"]]],
+    ["10", [[0.7071067811865477,"10"],[0.7071067811865477,"11"]]],
+    ["11", [[-0.7071067811865477,"10"],[0.7071067811865477,"11"]]]
+    ]
+,
+"Rot4": // |0>  ->  0.92388|0> + 0.38268|1>,  |1>  ->  -0.38268|0> + 0.92388|1>
+    [
+    ["0", [[0.9238795325255216,"0"],[0.3826834323307243,"1"]]],
+    ["1", [[-0.3826834323307243,"0"],[0.9238795325255216,"1"]]]
+    ]
+,
+"CRot4":// |00>  ->  |00>,  |01>  ->  |01>,  
+        // |10>  ->  0.99518|10> + 0.09802|11>,  |11>  ->  -0.09802|10> + 0.99518|11>
+    [
+    ["00", [[1,"00"],[0,"01"],[0,"10"],[0,"11"]]],
+    ["01", [[0,"00"],[1,"01"],[0,"10"],[0,"11"]]],
+    ["10", [[0,"00"],[0,"01"],[0.9238795325255216,"10"],[0.3826834323307243,"11"]]],
+    ["11", [[0,"00"],[0,"01"],[-0.3826834323307243,"10"],[0.9238795325255216,"11"]]]
+    ]
+,
+"Rot16"://"0"->0.99518472667"0"+0.09801714032"1", "1"->-0.09801714032"0"+0.09801714032"1"
+       //cos(pi/2/16)   sin(pi/2/16)
+    [
+    ["0", [[0.9951847266731085,"0"],[0.09801714032030616,"1"]]],
+    ["1", [[-0.09801714032030616,"0"],[0.9951847266731085,"1"]]]
+    ]
+,
+"CRot16"://"00"->"00", "01"->"01"
+        //"10"->0.99518472667"10"+0.09801714032"11", "11"->-0.09801714032"10"+0.09801714032"11"
+    [
+    ["00", [[1,"00"]]],
+    ["01", [[1,"01"]]],
+    ["10", [[0.9951847266731085,"10"],[0.09801714032030616,"11"]]],
+    ["11", [[-0.09801714032030616,"10"],[0.9951847266731085,"11"]]]
+    ]
+,
+"Inc2":
+    [
+    ["00", [[1,"10"]]],
+    ["01", [[1,"11"]]],
+    ["10", [[1,"01"]]],
+    ["11", [[1,"00"]]]
+    ]
+,
+"CInc2":
+    [
+    ["000", [[1,"000"]]],
+    ["001", [[1,"101"]]],
+    ["010", [[1,"010"]]],
+    ["011", [[1,"111"]]],
+    ["100", [[1,"110"]]],
+    ["101", [[1,"011"]]],
+    ["110", [[1,"101"]]],
+    ["111", [[1,"000"]]]
+    ]
+,
+"Inc3":
+    [
+    ["000", [[1,"100"]]],
+    ["001", [[1,"101"]]],
+    ["010", [[1,"110"]]],
+    ["011", [[1,"111"]]],
+    ["100", [[1,"010"]]],
+    ["101", [[1,"011"]]],
+    ["110", [[1,"001"]]],
+    ["111", [[1,"000"]]]
+    ]
+,
+"CInc3":
+    [
+    ["0000", [[1,"0000"]]],
+    ["0001", [[1,"0001"]]],
+    ["0010", [[1,"0010"]]],
+    ["0011", [[1,"0011"]]],
+    ["0100", [[1,"0100"]]],
+    ["0101", [[1,"0101"]]],
+    ["0110", [[1,"0110"]]],
+    ["0111", [[1,"0111"]]],
+    ["1000", [[1,"1100"]]],
+    ["1001", [[1,"1101"]]],
+    ["1010", [[1,"1110"]]],
+    ["1011", [[1,"1111"]]],
+    ["1100", [[1,"1010"]]],
+    ["1101", [[1,"1011"]]],
+    ["1110", [[1,"1001"]]],
+    ["1111", [[1,"1000"]]]
+    ]
+};
+
+//These are turned into special/readable/short form functions in onload().
+
+//Uniquely defined special functions: AddBit(n) (n is optional), RemoveBit(n), MoveBit(n1,n2)
+
+//QTransforms=QTransformsDefault;
+
+QTransforms=CopyQTransforms(QTransformsDefault);
+//console.log("Here it is: "+JSON.stringify(QTransforms));
+
+function setCookie(cname, cvalue) {
+    var d = new Date();
+    //d.setTime(d.getTime() + (exdays*24*60*60*1000));//where exdays was a function input
+    //var expires = "expires="+ d.toUTCString();
+    var expires="expires="+new Date(2147483647 * 1000).toUTCString();//version with close to infinite timeout
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+CreateTransformFunction = function( current_trans, name="" ) {
+    //console.log("creating "+key+" with trans: "+JSON.stringify(current_trans));
+    return function(...var_args){        
+        ApplyTransformation(QSystem,current_trans,var_args);
+        if(TransRecord){
+            AddQGateToSvg(TransRecordSvg,var_args,name,TransRecordLine);
+            TransRecordLine++;
+        }
+    };
+};
+function onload(){
+
+    
+
+    var ck=getCookie("QTransforms");
+    if(ck!=""){
+        QTransforms=JSON.parse(ck);
+    }
+    var select=document.getElementById("QuantumGateSelect");
+    select.options.length = 0;
+    var trans;
+    for(var key in QTransforms){// like "function CNot()", etc.
+        select.options[select.options.length] = new Option(key,key);
+        trans=QTransforms[key];
+        //console.log(JSON.stringify(trans));
+        if(Array.isArray(trans)){//create global variables
+            trans=CreateNormalizedTransform(trans);
+            window[key]=CreateTransformFunction(trans,key);
+            console.log(window[key].toString());
+        }
+        //else
+        //    window[key]=trans;
+        //console.log(JSON.stringify(trans));
+    }
+    select.options[select.options.length] = new Option("Add Gate","Add Gate");
+    select.options[select.options.length] = new Option("Edit Order","Edit Order");
+    QSystemUpdated=true;
+    
+    SelectQuantumGate();
+    AutoApplyTransformHandler();
+    PrintShortFormHandler();
+}
+
+
+function AddQTransform(name,QTransform){
+    var select=document.getElementById("QuantumGateSelect");
+    select.options[select.options.length-2] = new Option(name,name);
+    select.options[select.options.length-1] = new Option("Add Gate","Add Gate");    
+    select.options[select.options.length] = new Option("Edit Order","Edit Order");
+    QTransforms[name]=QTransform;
+    window[name]=CreateTransformFunction(QTransform,name);
+}
+function ImportQTransforms(NewQTransforms){
+    var select=document.getElementById("QuantumGateSelect");
+    //select.InnerHTML="";
+    select.options.length=0;
+    var trans_list={};
+    var er=false;
+    var trans;
+    var key="";    
+    for(key in NewQTransforms){
+        
+        select.options[select.options.length] = new Option(key,key);
+        trans=NewQTransforms[key];
+        trans_list[key]=trans;
+        
+        if(Array.isArray(trans)){//create global variables
+            //console.log("key: "+key+", trans: "+JSON.stringify(trans));
+            trans=CreateNormalizedTransform(trans);            
+            window[key]=CreateTransformFunction(trans,key);
+        }
+        else{
+            er=true;
+            break;
+        }
+    }
+    select.options[select.options.length] = new Option("Add Gate","Add Gate");
+    select.options[select.options.length] = new Option("Edit Order","Edit Order");
+    if(!er){
+        QTransforms=trans_list;
+        DebugText+="//Import Successful\n";
+        console.log("success");
+    }
+    else{
+        DebugText+="//Import Error: failed at QTransform \""+key+"\"\n";
+        console.log("fail");
+    }
+}
+function PrintQTransformsPrint(){
+    var lines=["QTransforms={"];
+    var i=0;
+    for(var key in QTransforms) {
+        lines.push((i>0?",\n":"\n")+"\""+key+"\": "+JSON.stringify(QTransforms[key]));    
+        i++;
+    }
+    lines.push("\n};\n");
+    lines.push("ImportQTransforms(QTransforms)\n");
+    DebugText=lines.join("");
+}
+function PrintQTransformsSave(){
+    setCookie("QTransforms",JSON.stringify(QTransforms));
+}
+function PrintQTransformsReset(){
+    ImportQTransforms(QTransformsDefault);
+}
+
+
+
+TransformationDataIsFromSelectedGate=false;//starts out set to first built-in transform in list.
+function EditTransformTextHandler(){
+    TransformationDataIsFromSelectedGate=false;
+}
+
+
+function SelectQuantumGate(){
+    
+    if(document.getElementById("QuantumGateSelect").value=="Add Gate"){
+        var Name= prompt("Please enter quantum logic gate's name", "QGate");
+        if(Name!==null){
+            var gate=JSON.parse(document.getElementById("TransformationData").value);            
+            console.log("gate: "+JSON.stringify(gate));
+            AddQTransform(Name,gate);
+            TransformationDataIsFromSelectedGate=true;
+            UpdateMatrixForm(gate);
+        }
+    }
+    else if(document.getElementById("QuantumGateSelect").value=="Edit Order"){
+        //console.log("edit order");
+        var ar=[];
+        for(var key in QTransforms) {
+            ar[ar.length]=key;
+        }
+        ar= prompt("Edit Gate Order", JSON.stringify(ar));
+        ar=JSON.parse(ar);
+        if(Array.isArray(ar)){
+            //console.log("new order: "+JSON.stringify(ar));
+            var new_trans={};
+            var er=false;
+            var name;
+            for(var i in ar){
+                name=ar[i];
+                //console.log("QTransforms["+name+"]: "+JSON.stringify(QTransforms[name]));
+                if(isset(QTransforms[ar[i]]))
+                    new_trans[name]=QTransforms[name];
+                else{
+                    er=true;
+                    console.log("reorder error on "+name);
+                    break;
+                }
+            }
+            if(!er){
+                ImportQTransforms(new_trans);
+                //Will be reset to first element selected but SelectQuantumGate() will not be called again so doing it manually here:
+                setInterval(function(){
+                    if(document.getElementById("QuantumGateSelect").value!="Edit Order")
+                        SelectQuantumGate();
+                },100);
+            }
+        }
+    }
+    else{
+        //2-bit gates:  https://medium.com/@jonathan_hui/qc-programming-with-quantum-gates-2-qubit-operator-871528d136db
+        TransformationDataIsFromSelectedGate=true;
+        var TransInput=document.getElementById("TransformationData");
+        var QbitPosListInput=document.getElementById("QbitPositionList");
+        var str="";
+        TransInput.value="test";
+        var funct;
+        if(isset(QTransforms[document.getElementById("QuantumGateSelect").value]))
+            funct=QTransforms[document.getElementById("QuantumGateSelect").value];
+        else
+            funct=QTransforms["default"];
+        var str=TransformToFormattedString(funct);
+        var num_bits=funct[0][0].length;
+        TransInput.value=str;
+                
+        document.getElementById("TransformationDataMathematical").innerHTML=QTransformToMath(funct);//dustin
+        UpdateMatrixForm(funct);
+
+        if(AutoApplyTransform){
+            ClearBits();
+        }
+        else{
+            //Auto-guess:
+            var bit_list=JSON.parse(QbitPosListInput.value);
+            if(num_bits<bit_list.length){
+                bit_list=bit_list.slice(0,num_bits);        
+            }
+            if(num_bits>bit_list.length){
+                if(bit_list.indexOf(-1)<0){
+                    var num = 0;
+                    while(bit_list.indexOf(num)>=0){
+                        num++;
+                    }
+                    while(num_bits>bit_list.length){
+                        bit_list.push(num);
+                        num++;
+                    }
+                }
+                else{
+                    while(num_bits>bit_list.length){
+                        bit_list.push(-1);
+                    }
+                }
+            }//end if(num_bits>bit_list.length)
+            QbitPosListInput.value=JSON.stringify(bit_list);
+        }
+    }
+}//end SelectQuantumGate()
+function NormalizeTransfromButtonHandler(){
+    var Trans=JSON.parse(document.getElementById("TransformationData").value);
+    Trans=CreateNormalizedTransform(Trans);
+    document.getElementById("TransformationData").value=TransformToFormattedString(Trans);//JSON.stringify(Trans);//TransformToFormattedString(Trans);//
+    QSystemUpdated=true;
+    UpdateMatrixForm(Trans);
+}
+function SimplifyButtonHandler(){
+    var Trans=JSON.parse(document.getElementById("TransformationData").value);
+    var newstate,oldstate;
+    for(var i=0;i<Trans.length;i++){
+        oldstate=Trans[i][1];
+        newstate=[];
+        for(var j=0;j<oldstate.length;j++){
+            if(oldstate[j][0]!=0)
+                newstate.push(oldstate[j]);    
+        }
+        Trans[i][1]=newstate;
+    }
+    document.getElementById("TransformationData").value=JSON.stringify(Trans);
+    QSystemUpdated=true;
+    UpdateMatrixForm(Trans);
+}
+function QTransformToMatrix(QTransform){
+    //Ex: [["00",[[1,"10"]]],["01",[[1,"11"]]],["10",[[1,"01"]]],["11",[[1,"00"]]]]
+    var res=[];
+    //console.log("matrix converting transform: "+JSON.stringify(QTransform));
+    if(QTransform.length>0){
+        var num_of_bits=QTransform[0][0].length;
+        var rows=Math.pow(2,num_of_bits),columns=rows;
+        var res=Array(rows).fill().map(() => Array(columns).fill(0));
+        //console.log("ar init res: "+JSON.stringify(res));
+        var row,col,val;
+        for(var i=0;i<QTransform.length;i++){
+            //console.log("qtr["+i+"]: ");
+            //console.log("qtr["+i+"]: "+JSON.stringify(QTransform[i]));
+            col=parseInt(QTransform[i][0],2);//note: might have gotten row/col reversed...
+            for(var j=0;j<QTransform[i][1].length;j++){
+                row=parseInt(QTransform[i][1][j][1],2);
+                val=QTransform[i][1][j][0];
+                res[row][col]=val;
+            }
+        }
+    }
+    return res;
+}
+function MatrixToHtmlTable(Matrix){
+    var html_table = document.createElement("table")
+    var row,cell;
+    for(var i=0;i<Matrix.length;i++){
+        row=html_table.insertRow();
+        for(var j=0;j<Matrix[i].length;j++){
+            cell = row.insertCell();
+            console.log(i+","+j+": "+JSON.stringify(Matrix[i][j])+" -> "+ComplexToStringForm(Matrix[i][j]));
+            cell.innerHTML = ComplexToStringForm(Matrix[i][j]);
+        }
+    }
+    return html_table;
+}
+function UpdateMatrixForm(QTransform){
+    var el=document.getElementById('MatrixForm');
+    console.log("qtransform: "+JSON.stringify(QTransformToMatrix(QTransform)));
+    if(el.firstChild!==null){
+        el.removeChild(el.firstChild);
+    }    
+    el.appendChild(MatrixToHtmlTable(QTransformToMatrix(QTransform)));
+}
+function ComplexToStringForm(num,Round=true,IsInSubsequentTerm=false,RemoveIf1=false){
+    var res="",num,sign,re,im,re_displ,im_displ,displ,re_sign,im_sign;
+    if(Array.isArray(num)){
+        re=num[0];
+        im=num[1];
+    }
+    else{
+        re=num;
+        im=0;
+    }
+    if(Round){
+        re= Math.round(re*100000)/100000;
+        im= Math.round(im*100000)/100000;
+    }
+    sign=0;//for (re+im)
+    displ="";
+    re_displ="";
+    im_displ="";
+    //Re and Im parts of string
+    if(re!=0 && im!=0){
+        if(re<0){
+            sign=-1;
+            re=-re;
+            im=-im;
+        }    
+        else
+            sign=1;      
+        re_displ="("+re;
+        if(im==1)
+            im_displ="+i)";
+        else if(im==-1)
+            im_displ="-i)";
+        else if(im>0)
+            im_displ="+"+im+"i)";
+        else if(im<0)
+            im_displ=""+im+"i)";        
+    }
+    else if(re!=0){
+        if(re<0){
+            sign=-1;
+            re=-re;
+        }
+        else
+            sign=1;
+        if(re!=1 || !RemoveIf1)
+            re_displ=""+re;
+    }
+    else if(im!=0){
+        if(im<0){
+            sign=-1;
+            im=-im;
+        }
+        else
+            sign=1;
+        if(im!=1)
+            im_displ=""+im+"i";
+        else
+            im_displ="i";
+    }
+    //Combine Re and Im parts
+    displ=re_displ+im_displ;
+    //Determine sign in front of whole term
+    if(!IsInSubsequentTerm){
+        if(sign<0)
+            displ="-"+displ;
+    }
+    else{
+        if(sign>0)
+            displ=" + "+displ;
+        else if(sign<0)
+            displ=" - "+displ;
+    }
+    if(sign==0)
+        displ="0";
+    return displ;
+}
+function QSystemToMath(QSystem,Round=true){
+    //Ex: QSystem={"states":[[0,"00"],[0,"01"],[1,"10"],[0,"11"]],"names":["a","b"]}
+    var res="",num,sign,displ;
+    var non_zero_term_num=0;
+    for(var i=0;i<QSystem["states"].length;i++){
+        num=QSystem["states"][i][0];        
+        displ= ComplexToStringForm(num,Round,non_zero_term_num>0,true);
+        if(displ!="0"){
+
+            res+=displ+"|"+QSystem["states"][i][1]+">";
+            non_zero_term_num++;
+        }
+    }
+
+
+    return res;
+}
+function QTransformToMath(QTransform,Round=true){
+    //Ex: [["00",[[1,"10"]]],["01",[[1,"11"]]],["10",[[1,"01"]]],["11",[[1,"00"]]]]
+    var res="",non_zero_term_num=0,QSystem={};
+    for(var i=0;i<QTransform.length;i++){
+        
+        QSystem["states"]=QTransform[i][1];
+        val=QSystemToMath(QSystem,Round);
+        if(val!=""){
+            if(non_zero_term_num>0)
+                res+=",  ";
+            res+="|"+QTransform[i][0]+">  ->  "+val;
+            non_zero_term_num++;
+        }
+    }
+    return res;
+}
+
+
+
+function ClearBits(){
+    var QbitPosListInput=document.getElementById("QbitPositionList");
+    var TransInput=document.getElementById("TransformationData");
+    var transform=JSON.parse(TransInput.value);
+    if(Array.isArray(transform)){
+        num_bits=transform[0][0].length;//ex: "00".length
+        var bit_list=[];
+        for(var i=0;i<num_bits;i++){
+            bit_list.push(-1);
+        }
+        QbitPosListInput.value=JSON.stringify(bit_list);
+        return bit_list;
+    }
+    else
+        return [-1];
+}
+
+function ApplySpecifiedTransformation(){
+    QSystemUpdated=true;
+    var Trans=JSON.parse(document.getElementById("TransformationData").value);
+    var QPosList=JSON.parse(document.getElementById("QbitPositionList").value);
+    Trans=CreateNormalizedTransform(Trans);
+    if(PrintShortForm && TransformationDataIsFromSelectedGate){
+        DebugText+=document.getElementById("QuantumGateSelect").value+"("+QPosList.join(",")+");\n";
+    }
+    else
+        DebugText+="ApplyTransformation(QSystem,"+JSON.stringify(Trans)+","+JSON.stringify(QPosList)+");\n";
+    ApplyTransformation(QSystem,Trans,QPosList);
+    
+    UpdatePrecision();
+    RoundQSystem(QSystem);
+    if(TransRecord){
+        AddQGateToSvg(TransRecordSvg,QPosList,document.getElementById("QuantumGateSelect").value,TransRecordLine);//Ex: AddQGateToSvg(TransRecordSvg,[1,2,0],"TOF",3);
+        TransRecordLine++;
+    }
+}
+
+function NormalizeButtonHandler(){
+    DebugText+="NormalizeSystem(QSystem)\n";
+    NormalizeSystem(QSystem);    
+    QSystemUpdated=true;
+}
+
+
+
+
+
+function Calculate(){
+    document.activeElement=document.getElementById("CalculateButton");
+    var x = document.getElementById("OutputTextArea").value;
+    eval(x);
+    /*DebugText=DebugOut.value;*/
+    
+    //document.getElementById("StatesTextDisplay").innerHTML="QSystem="+JSON.stringify(QSystem);    
+    QSystemUpdated=true;
+}
+
+function CreateNewTransform(){//from  sequence of functions in calculation box
+    document.activeElement=document.getElementById("CreateNewTransformButton");
+    TotalTransformValid=true;
+    var qtransform=[];
+    var QSystemTemp=CopyQSystem(QSystem);
+    for(var i=0;i<QSystem.states.length;i++){
+        //set all to 0 except for a particular state
+        for(var j=0;j<QSystem.states.length;j++){
+            if(j==i)
+                QSystem.states[j][0]=1;
+            else
+                QSystem.states[j][0]=0;
+        }
+        //apply all the operations to that state
+        eval(document.getElementById("OutputTextArea").value);
+        //add it to the transfrom
+        qtransform.push([QSystem.states[i][1],CopyQSystem(QSystem).states]);
+        if(!TotalTransformValid){
+            DebugText+="//Create Transform Error: failed at state "+QSystem.states[i][1]+"\n";
+            break;
+        }            
+    }
+    if(TotalTransformValid){
+        QSystem=QSystemTemp;
+        QTransform=qtransform;
+        QSystemUpdated=true;
+        document.getElementById("TransformTextDisplay").innerHTML=JSON.stringify(QTransform);
+        document.getElementById("TransformTextDisplayMathematical").innerHTML=QTransformToMath(QTransform);
+        DebugText+="//Create Transform Success!"+"\n";
+    }
+}
+/*
+//Ex:
+ApplyTransformation(QSystem,[["0",[[0.7071067811865475,"0"],[0.7071067811865475,"1"]]],["1",[[0.7071067811865475,"0"],[-0.7071067811865475,"1"]]]],[0])
+ApplyTransformation(QSystem,[["00",[[1,"00"]]],["01",[[1,"01"]]],["10",[[1,"11"]]],["11",[[1,"10"]]]],[0,1])
+->
+[
+["00", [[0.7071067811865476,"00"],[0,"01"],[0,"10"],[0.7071067811865476,"11"]]],
+["01", [[0,"00"],[0.7071067811865476,"01"],[0.7071067811865476,"10"],[0,"11"]]],
+["10", [[0.7071067811865476,"00"],[0,"01"],[0,"10"],[-0.7071067811865476,"11"]]],
+["11", [[0,"00"],[0.7071067811865476,"01"],[-0.7071067811865476,"10"],[0,"11"]]]
+]
+*/
+
+function CopyStatesArray(states){
+    var res=[];
+    for(var i=0;i<states.length;i++){
+        res.push([states[i][0],states[i][1]]);
+    }
+    return res;
+}
+function CopyQSystem(QSystem){
+    return {"states": CopyStatesArray(QSystem.states), "names": QSystem.names.slice(0)};
+}
+function CopyTransform(Transform){
+    var new_trans=[];
+    var i;
+    for(i in Transform){
+        new_trans[i]=[Transform[i][0],CopyStatesArray(Transform[i][1])];
+    }
+    return new_trans;
+}
+function CopyQTransforms(QTransforms){
+    var new_transforms={};
+    var key;
+    for(key in QTransforms){
+        new_transforms[key]=CopyTransform(QTransforms[key]);
+    }
+    return new_transforms;
+}
+
+
+
+//
+function Combine(q0,q1){//combine qsystems (usually used to add one bit at a time)
+    //Input 2 bits: 
+    //[{"states": [[1,"0"],[2,"1"]],"names": ["a"]},{"states": [[3,"0"],[5,"1"]],"names": ["b"]}]
+    var states0=q0.states;
+    var names0=q0.names;
+    var states1=q1.states;
+    var names1=q1.names;
+    var states=[];
+    var i,j;    
+    for(i=0;i<states0.length;i++){
+        for(j=0;j<states1.length;j++){
+            states.push([MultiplyRealOrComplex(states0[i][0],states1[j][0]),states0[i][1]+states1[j][1]]);
+        }
+    }    
+    var names=names0.concat(names1);
+    return {"states": states, "names": names};
+}
+
+
+//not done yet and might never use
+function CheckIfQbitSeparable(QSystem,QPos,CopyFirst=true){//checks if separable before making changes
+    var debug=false;
+    var num_of_bits=QSystem.names.length;
+    var NewNameOrder=QSystem.names.slice(0);
+    var QSystemTemp=QSystem;
+    if(CopyFirst)
+        QSystemTemp=CopyQSystem(QSystem);
+    array_move(NewNameOrder,QPos,0);
+    ReOrderQbits(QSystemTemp,NewNameOrder);
+    OrderStatesByName(QSystemTemp);
+    var states=QSystemTemp.states;
+    var sum1,sum2,amp1,amp2;
+    var match=true;
+    sum1=0;
+    for(var j=0;j<states.length/2;j++){    
+        sum1+=Math.sqrt(AmplitudeSquaredRealOrComplex(states[j][0]));//Math.abs(states[j][0]);
+    }
+    sum2=0;
+    for(var j=states.length/2;j<states.length;j++){    
+        sum2+=Math.sqrt(AmplitudeSquaredRealOrComplex(states[j][0]));//Math.abs(states[j][0]);
+    }
+    var ratio=0;
+    if(sum1>1/RoundPowerOf10 && sum2>1/RoundPowerOf10){
+        
+        var div;
+        for(var j=0;j<states.length/2;j++){    
+            amp1=states[j][0];
+            amp2=states[j+states.length/2][0];
+            if(debug)console.log("bit "+QPos+" pair "+j+": "+JSON.stringify(amp1)+","+JSON.stringify(amp2));
+            //if(debug) console.log("type 1: "+(typeof amp1)+", 2: "+(typeof amp2)+", abs values squared 1: "+(AmplitudeSquaredRealOrComplex(amp1))+", 2: "+(AmplitudeSquaredRealOrComplex(amp2))+", abs values 1: "+Math.sqrt(AmplitudeSquaredRealOrComplex(amp1))+", 2: "+Math.sqrt(AmplitudeSquaredRealOrComplex(amp2)));
+            if(Math.sqrt(AmplitudeSquaredRealOrComplex(amp1))>1/RoundPowerOf10 && Math.sqrt(AmplitudeSquaredRealOrComplex(amp2))>1/RoundPowerOf10){    
+                div=MultiplyRealOrComplex(amp1,InverseRealOrComplex(amp2));
+                if(debug)console.log("bit "+QPos+" ratio "+j+": "+div);
+                if(ratio!=0){
+                    dif=Math.sqrt(AmplitudeSquaredRealOrComplex(SubtractRealOrComplex(ratio,div)));//Math.abs(ratio-amp1/amp2);
+                    if(dif>1/RoundPowerOf10){// if(ratio!=amp1/amp2) within an error 1/RoundPowerOf10
+                        match=false;
+                        console.log("dif for failed match when both non-zero: "+dif);
+                        break;
+                    }                            
+                }
+                else{
+                    ratio=div;
+                    if(debug)console.log("initialized ratio to "+JSON.stringify(div));
+                }
+            }
+            else if(Math.sqrt(AmplitudeSquaredRealOrComplex(SubtractRealOrComplex(amp1,amp2)))>2/RoundPowerOf10){//if(amp1!=amp2){
+                match=false;
+                if(debug)console.log("dif for failed match when one is zero: "+Math.sqrt(AmplitudeSquaredRealOrComplex(SubtractRealOrComplex(amp1,amp2))));
+                break;
+            }  
+        }//end for(var j=0;j<states.length/2;j++)
+    }//end if(sum1>0 && sum2>0)
+    return match;
+}
+
+function CheckWhichQbitsSeparable(QSystem){//check which bits you can can use RemoveSeparableQbit(QSystem,QPos) on.
+    //look at parts of OrderByQbit()
+    var debug=true;
+    if(debug)console.log("CheckWhichQbitsSeparable START");
+    // check (separable):
+    // QSystem={"states":[[0,"00"],[0.7071067811865475,"01"],[0,"10"],[[0,-0.7071067811865475],"11"]],"names":["a","b"]}
+    // and (entangled):
+    // QSystem={"states":[[0.7071067811865475,"00"],[0,"01"],[0,"10"],[0.7071067811865475,"11"]],"names":["a","b"]}l
+    // and make sure stays the same when using single bit operations.
+    var res=[];
+    var match;
+    var  QSystemTemp=CopyQSystem(QSystem);
+    //console.log("test if sep");
+    var num_of_bits=QSystem.names.length;
+    for(var i=0;i<num_of_bits;i++){       
+        match=CheckIfQbitSeparable(QSystemTemp,i,false);
+        res.push(match);       
+    }    
+    //console.log("end test if sep");
+    if(debug)console.log("CheckWhichQbitsSeparable END");
+    return res;
+}
+
+function RemoveSeparableQbit(QSystem,QPos){//checks if separable before making changes
+    var debug=false;
+    var num_of_bits=QSystem.names.length;
+    if(debug)console.log("RemoveSeparableQbit START");
+    var NewNameOrder=QSystem.names.slice(0);
+    var QSystemTemp=CopyQSystem(QSystem);
+    array_move(NewNameOrder,QPos,0);
+    ReOrderQbits(QSystemTemp,NewNameOrder);
+    OrderStatesByName(QSystemTemp);
+    var states=QSystemTemp.states;
+        
+    var match=true;
+    var sum1=0;
+    for(var j=0;j<states.length/2;j++){    
+        sum1+=(AmplitudeSquaredRealOrComplex(states[j][0]));//sum1+=Math.abs(states[j][0]);    
+    }
+    var sum2=0;
+    for(var j=states.length/2;j<states.length;j++){    
+        sum2+=(AmplitudeSquaredRealOrComplex(states[j][0]));//Math.abs(states[j][0]);
+    }
+    match=CheckIfQbitSeparable(QSystemTemp,QPos);
+    if(match){//if is separable
+        var start,end,mult;
+        if(sum1>sum2){
+            start=0;
+            end=states.length/2;
+            mult=Math.sqrt(1/sum1);
+            if(debug)console.log("mult from sum1="+mult);
+        }
+        else{
+            start=states.length/2;
+            end=states.length;
+            mult=Math.sqrt(1/sum2);
+            if(debug)console.log("mult from sum2="+mult);
+        }
+        var states_new=[];
+        for(var i=start;i<end;i++){
+            states_new.push([MultiplyRealOrComplex(states[i][0],mult),states[i][1].substr(1)]);        
+        }
+        QSystemTemp.states=states_new;
+        QSystemTemp.names.shift();
+        return QSystemTemp;
+    }
+    else{
+        TotalTransformValid=false;
+        return QSystem;
+    }
+    if(debug)console.log("RemoveSeparableQbit END");
+}//end RemoveSeparableQbit()
+
+
+
+function ReOrderQbits(QSystem,NewNameOrder){
+    //Inputs: [{"states": [[0,"00"],[1,"01"],[0,"10"],[1,"11"]],"names": ["a","b"]},["b","a"]]
+
+    var names=QSystem.names;
+    var states=QSystem.states;
+    var name_order={};
+    for(var i=0;i<names.length;i++){
+        name_order[names[i]]=i;
+    }
+    //console.log("re-order according to "+NewNameOrder+", with current names "+names );
+    var qstr,qstr_new;
+    for(var i=0;i<states.length;i++){
+        qstr=states[i][1];//change order for string such as "011"
+        qstr_new=Array(qstr.length).fill("_");//qstr_new="_".repeat(qstr.length);
+        for(var j=0;j<NewNameOrder.length;j++){
+            qstr_new[j] =qstr.charAt(name_order[NewNameOrder[j]]); 
+        }        
+        //console.log("re-order bits "+qstr+" to "+qstr_new);
+        states[i][1]=qstr_new.join("");
+    }
+    QSystem.names=NewNameOrder.slice(0);    
+}
+function OrderStatesArrayByName(states){
+    states.sort(function(a, b){return a[1]-b[1]});
+}
+function OrderStatesByName(x){
+    var states=x.states;
+    OrderStatesArrayByName(states);
+}
+function OrderReversedStatesByName(x){
+    var states=x.states;
+    states.sort(function(a, b){return b[1]-a[1]});
+}
+function OrderReversedStatesByAmplitude(x){
+    var states=x.states;
+    states.sort(function(a, b){return Math.abs(b[0])-Math.abs(a[0])});
+}
+function array_move(arr, old_index, new_index){
+    //from https://stackoverflow.com/questions/5306680/move-an-array-element-from-one-array-position-to-another
+    if (new_index >= arr.length) {
+        var k = new_index - arr.length + 1;
+        while (k--) {
+            arr.push(undefined);
+        }
+    }
+    arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+};
+//Specifically for GUI:
+function MoveQbit(QSystem,QPos1,QPos2){
+    var NewNameOrder=QSystem.names.slice(0);
+    if(0<=QPos1 && QPos1<NewNameOrder.length && 0<=QPos2 && QPos2<NewNameOrder.length){
+        array_move(NewNameOrder, QPos1, QPos2);
+        //DebugText+="new qbit order: "+JSON.stringify(NewNameOrder)+"\n";
+        ReOrderQbits(QSystem,NewNameOrder);
+    }
+}
+function MoveBit(QPos1,QPos2){//a special interface function
+    MoveQbit(QSystem,QPos1,QPos2);
+}
+function OrderByQbit(QSystem,QPos){
+    var OldNameOrder=QSystem.names.slice(0);
+    var NewNameOrder=QSystem.names.slice(0);
+    array_move(NewNameOrder, QPos,0);
+    ReOrderQbits(QSystem,NewNameOrder);
+    OrderStatesByName(QSystem);    
+    ReOrderQbits(QSystem,OldNameOrder);
+}
+function MoveState(QSystem,SPos1,Spos2){
+    array_move(QSystem.states, SPos1, Spos2);
+}
+//
+
+
+function CombineStatesArrayCommonTerms(states){    
+    var states_copy=states.slice(0);//copies array though elements still point to same sub-arrays (which won't be changed anyway).
+    OrderStatesArrayByName(states_copy);//re-order array
+    var ar=[states_copy[0]];
+    for(var i=1;i<states_copy.length;i++){
+        if(states_copy[i-1][1]==states_copy[i][1])
+        ar[ar.length-1][0]=AddRealOrComplex(ar[ar.length-1][0],states_copy[i][0])//ar[ar.length-1][0]+=states_copy[i][0];
+        else
+            ar.push([states_copy[i][0],states_copy[i][1]]);
+    }
+    return ar;
+}
+function FindStatesArrayProbabilityAmplitudes(states){
+
+}
+function NormalizeSystem(QSystem){
+    //{"states":[[0.2,"00"],[1,"01"],[0.2,"10"],[1,"11"]],"names":["a","b"]}
+    var states=QSystem.states,sum_of_squares=0;
+    for(var i=0;i<states.length;i++){
+        sum_of_squares+=AmplitudeSquaredRealOrComplex(states[i][0]);//states[i][0]*states[i][0];
+    }
+    for(var i=0;i<states.length;i++){
+        states[i][0]=MultiplyRealOrComplex(states[i][0],1/Math.sqrt(sum_of_squares)); //states[i][0]/=Math.sqrt(sum_of_squares);
+    }
+}
+function CreateNormalizedTransform(Trans){
+    // [ ["0", [[.707,"0"],[.707,"1"]] ], ["1", [[.707,"0"],[-.707,"1"]] ] ];
+    var res=[],sum_of_squares,bit_trans_list_new;
+    for(var t=0;t<Trans.length;t++){
+        bit_trans_list=Trans[t][1];
+        sum_of_squares=0;
+        for(var bt=0;bt<bit_trans_list.length;bt++){
+            sum_of_squares+=AmplitudeSquaredRealOrComplex(bit_trans_list[bt][0]);//bit_trans_list[bt][0]*bit_trans_list[bt][0];
+            //console.log("bit "+bt+" sum_squ "+sum_of_squares);
+        }
+        bit_trans_list_new=[];
+        for(var bt=0;bt<bit_trans_list.length;bt++){
+            bit_trans_list_new.push([MultiplyRealOrComplex(1/Math.sqrt(sum_of_squares),bit_trans_list[bt][0]),bit_trans_list[bt][1]]);//bit_trans_list_new.push([1/Math.sqrt(sum_of_squares)*bit_trans_list[bt][0],bit_trans_list[bt][1]]);
+        }
+        res.push([Trans[t][0],bit_trans_list_new]);
+    }
+    return res;
+}
+
+String.prototype.replaceAt=function(index, replacement) {//from https://stackoverflow.com/questions/1431094/how-do-i-replace-a-character-at-a-particular-index-in-javascript
+    return this.substr(0, index) + replacement+ this.substr(index + replacement.length);
+}
+function isset(variable){
+    return (variable !== undefined && variable !==null)
+}
+
+
+
+// The von Neumann entropy for a quantum source represented by a density operator D:
+// - sum eigen i *log(eigen i) of eigenvalues of density operator.
+// update(4/17): 
+// bellbind/eigenvalues.js
+// https://gist.github.com/bellbind/60fb876842346864baaf340cb789ad10
+//"use strict";
+// helpers
+function mat2d(mat) {
+    const n = Math.sqrt(mat.length);
+    return Array.from(Array(n), (_, i) => mat.slice(i * n, i * n + n));
+}
+function range(n, f = v => v) {
+    return Array.from(Array(n), (_, i) => f(i));
+}
+function sum(a, f = v => v) {
+    return a.reduce((r, v, i) => r + f(v, i), 0);
+}
+// returns hessenberg matrix: m[y][x] == 0 when y >= x + 2
+function householder(mat) {
+    const n = Math.sqrt(mat.length);
+    const m = Array.from(mat);
+    console.assert(Number.isInteger(n));
+    const idx = (x, y) => y * n + x;
+
+    for (let k = 0; k < n - 2; k++) {
+        if (Math.abs(m[idx(k, k + 1)]) < Number.EPSILON) continue;
+        const u = range(n, i => i <= k ? 0 : m[idx(k, i)]);
+        const sigma = Math.sign(u[k + 1]) * Math.hypot(...u);
+        u[k + 1] += sigma;
+        const norm = Math.sqrt(2 * sigma * u[k + 1]);
+        const h = u.map(v => v / norm);
+        
+        const sdx = range(n, i => sum(h, (v, j) => v * m[idx(j, i)]));
+        const sdy = range(n, i => sum(h, (v, j) => v * m[idx(i, j)]));
+        const hdx = sum(sdx, (v, i) => v * h[i]);
+        const hdy = sum(sdy, (v, i) => v * h[i]);
+        const dx = sdx.map((v, i) => 2 * (v - hdx * h[i]));
+        const dy = sdy.map((v, i) => 2 * (v - hdy * h[i]));
+        
+        for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+            m[idx(x, y)] -= h[y] * dy[x] + h[x] * dx[y];
+        }
+    }
+    return m;
+}
+// returns upper triangler matrix: m[y][x] == 0 when y >= x + 1
+function qr(mat) {
+    const n = Math.sqrt(mat.length);
+    const m = Array.from(mat);
+    console.assert(Number.isInteger(n));
+    const idx = (x, y) => y * n + x;
+    let k = n;
+
+    while (k >= 2) {
+        //console.log(k, m[idx(k - 2, k - 1)]);
+        //console.log(mat2d(m));
+        if (Math.abs(m[idx(k - 2, k - 1)]) < Number.EPSILON) {
+            k--;
+            continue;
+        }
+        
+        // eigenvalue of last 2x2 sub matrix: l^2 - tr * l + det = 0
+        const a = m[idx(k - 1, k - 1)], b = m[idx(k - 2, k - 1)],
+              c = m[idx(k - 1, k - 2)], d = m[idx(k - 2, k - 2)];
+        const tr = a * d, det = a * d - b * c;
+        const disc = Math.sqrt(tr * tr - 4 * det) || 0;
+        const l1 = (tr + disc) / 2, l2 = (tr - disc) / 2;
+        const mu = a - (Math.abs(l1) < Math.abs(l2) ? l1 : l2);
+        // (option) pre process M = M - mu * I 
+        for (let i = 0; i < k; i++) m[idx(i, i)] -= mu;
+        
+        // init q as unit matrix
+        const idxq = (x, y) => y * k + x;
+        const q = Array(k * k).fill(0);
+        for (let i = 0; i < k; i++) q[idxq(i, i)] = 1;
+        
+        // rotate to makes M => Q * R (R store to M)
+        for (let i = 0; i < k - 1; i++) {
+            const a1 = m[idx(i, i)], a2 = m[idx(i, i + 1)]; 
+            const base = Math.hypot(a1, a2);
+            const cos = base < Number.EPSILON ? 0 : a1 / base;
+            const sin = base < Number.EPSILON ? 0 : a2 / base;
+            // make R
+            m[idx(i, i)] = base;
+            m[idx(i, i + 1)] = 0;
+            for (let x = i + 1; x < k; x++) {
+                const e1 = m[idx(x, i)], e2 = m[idx(x, i + 1)];
+                m[idx(x, i)] = e1 * cos + e2 * sin;
+                m[idx(x, i + 1)] = e2 * cos - e1 * sin;
+            }
+            // make Q
+            for (let y = 0; y < k; y++) {
+                const e1 = q[idxq(i, y)], e2 = q[idxq(i + 1, y)];
+                q[idxq(i, y)] = e1 * cos + e2 * sin;
+                q[idxq(i + 1, y)] = e2 * cos - e1 * sin;
+            }
+        }
+
+        // next M as R * Q
+        for (let y = 0; y < k; y++) {
+            const ry = Array.from(Array(k - y), (_, j) => m[idx(y + j, y)]);
+            for (let x = 0; x < k; x++) {
+                m[idx(x, y)] = sum(ry, (v, j) => v * q[idxq(x, j + y)]);
+            }
+        }
+        
+        // (option) post process M = M + mu * I
+        for (let i = 0; i < k; i++) m[idx(i, i)] += mu;        
+    }
+    return m;
+}
+// list of eigen values square matrix (allow non symmetric)
+function eigenvalues(mat) {
+    const ut = qr(householder(mat));
+    const n = Math.sqrt(ut.length);
+    return range(n, i => ut[i * n + i]);
+}
+// example:
+// m = numpy.mat([[4, -6, 5], [-6, 3, 4], [5, 4, -3]])
+// numpy.linalg.eigvals(m) #=> array([-9.12030391,  9.62192181,  3.4983821 ])
+/*console.log(eigenvalues([
+    4, -6, 5,
+    -6, 3, 4,
+    5, 4, -3
+]));*/
+
+
+function MultiplyRealOrComplex(a,b){    
+    var a_is_ar=Array.isArray(a);
+    var b_is_ar=Array.isArray(b);
+    //console.log("Multiply Real/Complex BEGINNING:  a "+JSON.stringify(a)+" b "+JSON.stringify(b));
+    //console.log("a is ar "+a_is_ar+" b is ar "+b_is_ar);    
+    if(!a_is_ar && !b_is_ar){
+        //console.log("return "+(a*b));
+        return a*b;
+    }
+    else{
+        // (a+a1i)  (b+b1i) -> (ab-a1b1)+(ab1+a1b)*i
+        var a_ar=a;
+        var b_ar=b;
+        if(!a_is_ar)
+            a_ar=[a,0];
+        if(!b_is_ar)
+            b_ar=[b,0];
+        //console.log("a_ar "+JSON.stringify(a_ar)+" b_ar "+JSON.stringify(b_ar));
+        var res=[a_ar[0]*b_ar[0]-a_ar[1]*b_ar[1], a_ar[0]*b_ar[1]+a_ar[1]*b_ar[0]];
+        if(res[1]==0)
+            res=res[0];
+            //console.log("return "+JSON.stringify(res));
+        return res;
+    }
+}
+function AddRealOrComplex(a,b){
+    var a_is_ar=Array.isArray(a);
+    var b_is_ar=Array.isArray(b);
+    //console.log("a "+a_is_ar+" b "+b_is_ar);
+    if(!a_is_ar && !b_is_ar)
+        return a+b;
+    else{
+        // (a+a1i)  (b+b1i) -> (ab-a1b1)+(ab1+a1b)*i
+        var a_ar=a;
+        var b_ar=b;
+        if(!a_is_ar)   
+            a_ar=[a,0];
+        if(!b_is_ar)
+            b_ar=[b,0];
+        var res=[a_ar[0]+b_ar[0], a_ar[1]+b_ar[1]];
+        if(res[1]==0)
+            res=res[1];
+        return res;
+    }
+}
+function SubtractRealOrComplex(a,b){
+    var a_is_ar=Array.isArray(a);
+    var b_is_ar=Array.isArray(b);
+    //console.log("a "+a_is_ar+" b "+b_is_ar);
+    if(!a_is_ar && !b_is_ar)
+        return a-b;
+    else{
+        // (a+a1i)  (b+b1i) -> (ab-a1b1)+(ab1+a1b)*i
+        var a_ar=a;
+        var b_ar=b;
+        if(!a_is_ar)   
+            a_ar=[a,0];
+        if(!b_is_ar)
+            b_ar=[b,0];
+        var res=[a_ar[0]-b_ar[0], a_ar[1]-b_ar[1]];
+        if(res[1]==0)
+            res=res[1];
+        return res;
+    }
+}
+function ToComplex(a){
+    if(Array.isArray(a))
+        return a;
+    else
+        return [a,0];
+}
+function SimplifyComplex(a){//convert to real if complex part is 0
+    if(Array.isArray(a)){
+        if(a[1]==0)
+            return a[0];
+        else
+            return a;
+    }
+    else 
+        return a;
+}
+function AddComplex(a,b){
+    return [a[0]+b[0],a[1]+b[1]];
+}
+function SubtractComplex(a,b){
+    return [a[0]-b[0],a[1]-b[1]];
+}
+function AbsValueComplex(a){
+    return [Math.abs(a[0]),Math.abs(a[1])];
+}
+function AmplitudeSquaredRealOrComplex(a){
+    //console.log("amp squ: "+JSON.stringify(a)+" is ar="+Array.isArray(a));
+    if(Array.isArray(a))
+        return a[0]*a[0]+a[1]*a[1];
+    else
+        return a*a;
+}
+function InverseRealOrComplex(a){
+    if(Array.isArray(a)){
+        //   1/(a0+a1*i) -> (a0-a1*i)/(a0*a0+a1*a1)
+        return [a[0]/(a[0]*a[0]+a[1]*a[1]),-a[1]/(a[0]*a[0]+a[1]*a[1])];
+    }
+    else
+        return 1/a;
+}
+
+function ApplyTransformation(QSystem,Trans,QPosList){
+    //Simple Ex: 
+    //QSystem={"states":[[0.2,"00"],[1,"01"],[0.2,"10"],[1,"11"]],"names":["a","b"]};
+    //Trans=[ ["0", [[.707,"0"],[.707,"1"]] ], ["1", [[.707,"0"],[-.707,"1"]] ] ];
+    //QPosList=[0];//Since it is a one bit transformation on a 2 bit system, it is either this or [1].
+    //
+    //{"states": [ [0.2,"00"],                     [1,"01"],                     [0.2,"10"],                      [1,"11"] ],                    "names": ["a","b"]}
+    //{"states": [ [.2*.707,"00"],[.2*.707,"10"],  [1*.707,"01"],[1*.707,"11"],  [.2*.707,"00"],[-.2*.707,"10"],  [1*.707,"01"],[1*.707,"11"]],  "names": ["a","b"]}
+    //{"states": [ [.2*.707,"00"], [.2*.707,"00"], [1*.707,"01"], [1*.707,"01"], [.2*.707,"10"], [-.2*.707,"10"], [1*.707,"11"], [1*.707,"11"]], "names": ["a","b"]}
+    //{"states": [ [.2*.707+.2*.707,"00"], [1*.707+1*.707,"01"], [.2*.707-.2*.707,"10"], [1*.707+1*.707,"11"] ], "names": ["a","b"]}
+    //
+    
+    console.log("Apply transformation BEGINNING:  sys: "+JSON.stringify(QSystem)+"\ntrans: "+JSON.stringify(Trans)+"\nposlist: "+JSON.stringify(QPosList));
+    
+    var Debug=false;
+    var states=QSystem.states;
+
+    var bits_in_states=QSystem.names.length;
+
+    for(var q=0;q<QPosList.length;q++){//loop through QPosList [1,2] and check if any bit numbers are out of range
+        if(QPosList[q]<0 || QPosList[q]>=bits_in_states)
+            return;
+    }
+    
+    var new_states=[];
+    var state_positions={};//so can put new output in same order as original.
+    
+    for(var i=0;i<states.length;i++){//ex element: [0.3,"100"]
+        state_positions[states[i][1]]=i;
+        new_states.push([0,states[i][1]]);//adding elelement [0,"100"]
+    }
+
+    var trans_positions={};
+    for(var i=0;i<Trans.length;i++){
+        trans_positions[Trans[i][0]]=i;
+    }
+    var trans_str="",state_str="",state_amp=0,trans_el,bit_trans_list,trans_out_amp,trans_out_str,newstate_str;
+    if(Debug) DebugText+="\nApplying to qbits "+JSON.stringify(QPosList)+"\n\n";
+    for(var s=0;s<states.length;s++){//element: [0.3,"100"]
+        state_str=states[s][1];
+        state_amp=states[s][0];
+        trans_str="";
+        for(var q=0;q<QPosList.length;q++)//loop through QPosList [1,2]
+            trans_str+=state_str.charAt(QPosList[q]);
+        trans_el=Trans[trans_positions[trans_str]];//["00", [[.707,"01"],[.707,"10"]] ]    
+        bit_trans_list=trans_el[1];//[[.707,"01"],[.707,"10"]]
+        if(Debug) DebugText+="Since \""+trans_str+"\" -> "+JSON.stringify(bit_trans_list)+", \n";
+        if(Debug) DebugText+="states["+s+"]="+JSON.stringify(states[s])+" -> ";
+        for(var t=0;t<bit_trans_list.length;t++){//trans list element [.707,"01"]
+            trans_out_amp=bit_trans_list[t][0];//.707
+            trans_out_str=bit_trans_list[t][1];//"01"
+            newstate_str=state_str;//"100"
+            for(var q=0;q<QPosList.length;q++){//loop through [1,2]
+                newstate_str=newstate_str.replaceAt(QPosList[q],trans_out_str.charAt(q));
+            }
+            //newstate_str="101"
+            if(isset(state_positions[newstate_str]))
+                new_states[state_positions[newstate_str]][0]=AddRealOrComplex(new_states[state_positions[newstate_str]][0],MultiplyRealOrComplex(trans_out_amp,state_amp));
+            else{
+                new_states.push([MultiplyRealOrComplex(trans_out_amp,state_amp),newstate_str]);
+                state_positions[newstate_str]=new_states.length-1;
+            }
+            if(Debug){
+                if(t>0)
+                    DebugText+=" + ";
+                DebugText+="["+(MultiplyRealOrComplex(trans_out_amp,state_amp))+",\""+newstate_str+"\"]";
+            }            
+        }//end for(var =0;t<bit_trans_list.length;t++)
+        if(Debug) DebugText+="\n\n";
+    }//end for(var s=0;s<states.length;s++)
+    QSystem.states=new_states;
+    console.log("Apply transformation END sys: "+JSON.stringify(QSystem));
+}//end function ApplyTransformation
+
+
+
+//Note: just multiplying, rounding, and dividing a power of 10 gives several less decimal places of accuracy than expected.
+//log2(1/10000000000)=-33.219
+//RoundPowerOf10=Math.pow(2,33);
+//function RoundTo12Places(num){
+//    return Math.trunc(num*RoundPowerOf10)/RoundPowerOf10;
+//}
+RoundPowerOf10=100000000;
+RoundPrecPowerOf10=1000;
+ReallySmallNumber=.00000000000000000001;
+function RoundToPlaces(num,PowerOf10=RoundPowerOf10){
+    return Math.round(num*PowerOf10)/PowerOf10;
+}
+UpdatePrecision();
+function UpdatePrecision(){
+    var prec=document.getElementById("QbitPrecision").value.split(",");
+    if(Array.isArray(prec)){
+        if(prec.length==2){
+            var prec1=parseInt(prec[0]);
+            var prec2=parseInt(prec[1]);
+            if(!Number.isNaN(prec1) && !Number.isNaN(prec2)){
+                RoundPowerOf10=Math.pow(10,prec1);
+                RoundPrecPowerOf10=Math.pow(10,prec2);
+                var ex_init=RoundToPlaces((5.0-1/RoundPrecPowerOf10)/RoundPowerOf10,RoundPowerOf10*RoundPrecPowerOf10*10);
+                var ex=ex_init;
+                //console.log(" ex: "+ex.toFixed(20));                
+                var rnd=RoundToPlaces(ex);
+                //console.log("rnd: "+ex.toFixed(20));
+                dif=Math.abs(rnd-ex);
+                //console.log("dif: "+dif.toFixed(20));
+                if(dif>0 && dif<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+                    ex=rnd;
+                }
+                document.getElementById("QbitPrecisionLabel").innerHTML=ex_init.toFixed(20)+" -> "+ex.toFixed(20);
+            }
+        }
+    }
+}
+
+/*
+Rot16(0);
+RoundQSystem(QSystem);
+
+*/
+
+//Test:
+//QSystem={"states":[[0.5000000000000001,"000"],[0.4999999999999999,"001"],[0.1234567891234567,"010"],[0.5000000000000001,"011"],[0,"100"],[0,"101"],[0,"110"],[0,"111"]],"names":["a","b","c"]};
+//RoundQSystem(QSystem);
+//
+//var prec=parseInt(document.getElementById("QbitPrecision").value)
+//if(!Number.isNaN(prec))
+//   RoundPowerOf10=Math.pow(10,prec);
+
+function RoundQSystem(QSystem){
+    var Debug=false;
+    var states=QSystem["states"];
+    var rnd,dif,state_i,state_j;
+    for(var i=0;i<states.length;i++){
+        state_i=ToComplex(states[i][0]);
+        rnd=[RoundToPlaces(state_i[0]),RoundToPlaces(state_i[1])];
+        dif=AbsValueComplex(SubtractComplex(rnd,state_i));
+        //console.log("dif: "+dif.toFixed(14));
+        if(dif[0]>0 && dif[0]<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+            if(Debug) console.log("rounded "+(dif[0])+" to "+rnd[0]);
+            if(Debug) console.log("since dif="+dif[0].toFixed(14)+" < "+(1/RoundPowerOf10/RoundPrecPowerOf10).toFixed(14));
+            state_i[0]=rnd[0];            
+        }
+        if(dif[1]>0 && dif[1]<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+            state_i[1]=rnd[1];            
+        }
+        for(var j=0;j<states.length;j++){
+            state_j=ToComplex(states[j][0]);
+            dif=AbsValueComplex(SubtractComplex(state_i,state_j));
+            if(dif[0]>0 && dif[0]<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+                if(Debug) console.log("set "+(state_j[0])+" to "+state_i[0]);
+                if(Debug) console.log("since dif="+dif[0].toFixed(14)+" < "+(1/RoundPowerOf10/RoundPrecPowerOf10).toFixed(14));
+                state_j[0]=state_i[0];             
+            }
+            if(dif[1]>0 && dif[1]<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+                state_j[1]=state_i[1];             
+            }
+        }
+    }
+    for(var i=0;i<states.length;i++){
+        states[i][0]=SimplifyComplex(states[i][0]);
+    }
+}
+/*function RoundQSystem(QSystem){
+    var Debug=false;
+    var states=QSystem["states"];
+    var rnd,dif;
+    for(var i=0;i<states.length;i++){
+        rnd=RoundToPlaces(states[i][0]);
+        dif=Math.abs(rnd-states[i][0]);
+        //console.log("dif: "+dif.toFixed(14));
+        if(dif>0 && dif<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+            if(Debug) console.log("rounded "+(states[i][0])+" to "+rnd);
+            if(Debug) console.log("since dif="+dif.toFixed(14)+" < "+(1/RoundPowerOf10/RoundPrecPowerOf10).toFixed(14));
+            states[i][0]=rnd;
+            
+        }
+        for(var j=0;j<states.length;j++){
+            dif=Math.abs(states[i][0]-states[j][0]);
+            if(dif>0 && dif<=1/RoundPowerOf10/RoundPrecPowerOf10+ReallySmallNumber){
+                if(Debug) console.log("set "+(states[j][0])+" to "+states[i][0]);
+                if(Debug) console.log("since dif="+dif.toFixed(14)+" < "+(1/RoundPowerOf10/RoundPrecPowerOf10).toFixed(14));
+                states[j][0]=states[i][0];                
+            }
+        }
+    }
+}
+*/
+
+//Note: to make the following work, you have to apply whole sequence of tranformations on every possible combination of starting bits:
+function CombineTransformations(Trans1,Trans2){//where Trans2 is the new transform being applied to the chain of transforms
+    //DebugOut.value+=JSON.stringify(CombineTransformations(ROT1_2,ROT1_2));
+    var tr_entry={},Trans_new=[],bits;
+    for(var i=0;i<Trans1.length;i++){
+        tr_entry.states=CopyStatesArray(Trans1[i][1]);        
+        bits=[];
+        for(var j=0;j<Trans1[i][0].length;j++){
+            bits.push(j);
+        }
+        console.log("entry "+JSON.stringify(Trans1[i][0])+": "+JSON.stringify(tr_entry));
+        ApplyTransformation(tr_entry,Trans2,bits);        
+        Trans_new.push([Trans1[i][0],tr_entry.states]);
+    }
+    return Trans_new;
+}
+
+function CreateQSystem(n){    //not tested yet    
+    var alphabetic_num = "a".charCodeAt(0);
+    var NewQbitsSystem={"states": [[1,"0"]],"names": [String.fromCharCode(alphabetic_num)]};
+    var i=0;
+    while(i<n-1){
+        alphabetic_num++;
+        NewQbitsSystem=Combine(NewQbitsSystem,{"states": [[1,"0"]],"names": [String.fromCharCode(alphabetic_num)]});            
+        i++;
+    }
+    return NewQbitsSystem;
+}
+
+function ZeroQSystem(QSystem){
+    var str;
+    for(var i=0;i<QSystem.states.length;i++){
+        str=QSystem.states[i][1];
+        if(str.indexOf('1') !== -1)
+            QSystem.states[i][0]=0;
+        else
+            QSystem.states[i][0]=1;
+    }    
+    if(TransRecord){
+        TransRecordLine=0;
+        ClearSvgElement(TransRecordSvg);
+    }
+}
+function ReZeroQSystem(){
+    ZeroQSystem(QSystem);
+    DebugText+="ZeroQSystem(QSystem)\n";
+    
+    //document.getElementById("StatesTextDisplay").innerHTML="QSystem="+JSON.stringify(QSystem);    
+    QSystemUpdated=true;
+}
+
+
+
+</script>
+
+
+
+<script>
+//started from code at:  view-source:https://www.kirupa.com/html5/requestAnimationFrame_circles.htm
+var mainCanvas = document.getElementById("myCanvas");
+var mainContext = mainCanvas.getContext('2d');
+
+var canvasWidth = mainCanvas.width;
+var canvasHeight = mainCanvas.height;
+
+var TransRecordSvg=document.getElementById("TransRecordSvg");
+TransRecordSvg.setAttribute("width", "100%"/*mainCanvas.width*/);
+TransRecordSvg.setAttribute("height", mainCanvas.height);
+//Ex: AddQGateToSvg(TransRecordSvg,[1,2,0],"TOF",0);
+TransRecordLine=0;
+
+// depending on your browser, the right version of the rAF function will be returned...I hope
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+
+var DebugText="";
+var DebugTextPrev="";
+var DebugOut=document.getElementById("OutputTextArea");
+//{"states": [[.2,"00"],[1,"01"],[.2,"10"],[1,"11"]],"names": ["a","b"]};
+
+//QTransform=[ ["0", [[1,"0"]]],  ["1", [[1,"1"]]] ];
+DebugText="QSystem="+JSON.stringify(QSystem)+"\n";
+
+TotalTransformValid=true;
+
+
+function TransformToFormattedString(QTransform){
+    //[ ["0", [[1,"0"],[1,"1"]]], 
+    //["1", [[1,"0"],[-1,"1"]]] ]    
+    var lines=[],line="";
+    for(var i=0;i<QTransform.length;i++){
+        if(i>0) line=",\n"; else line="[\n";
+        line+="["+"\""+QTransform[i][0]+"\", "+JSON.stringify(QTransform[i][1])+"]";
+        lines.push(line);
+    }
+    lines[lines.length-1]+="\n]";
+    return lines.join("");
+}
+function DrawLine(X0,Y0,X1,Y1,Color){
+    mainContext = mainCanvas.getContext('2d');
+    mainContext.beginPath();
+    mainContext.moveTo(X0,Y0);
+    mainContext.lineTo(X1,Y1);
+    mainContext.strokeStyle  = Color;
+    // Make the line visible
+    mainContext.stroke();
+}
+function DrawCircle(X,Y,Radius,Color){
+    //Color: 'rgba(0, 51, 204, .1)'
+    mainContext = mainCanvas.getContext('2d');
+    
+    mainContext.beginPath();
+    
+    mainContext.arc(X, Y,Radius, 0, Math.PI * 2, false);
+    mainContext.closePath();
+    mainContext.fillStyle = Color;//'rgba(0, 51, 204, .1)';        
+    mainContext.fill();
+}
+function DrawEllipse(X,Y,Width,Height,Color){
+    drawEllipse(mainContext,X,Y,Width,Height,Color);
+}
+//started with http://www.williammalone.com/briefs/how-to-draw-ellipse-html5-canvas/
+function drawEllipse(context,centerX, centerY, width, height,Color) {    
+    context.beginPath();
+    context.moveTo(centerX, centerY - height/2); // A1          
+    context.bezierCurveTo(
+    centerX + width/2, centerY - height/2, // C1
+    centerX + width/2, centerY + height/2, // C2
+    centerX, centerY + height/2); // A2
+    context.bezierCurveTo(
+    centerX - width/2, centerY + height/2, // C3
+    centerX - width/2, centerY - height/2, // C4
+    centerX, centerY - height/2); // A1         
+    context.fillStyle = Color;
+    context.fill();
+    context.closePath();    
+}
+//        
+function DrawTextCenteredAt(X,Y,Text,Color){
+    mainContext.font = "20px Courier New";
+    mainContext.fillStyle = Color;
+    var dims=mainContext.measureText(Text);
+    mainContext.fillText(Text,X-dims.width/2,Y+20/2);
+}
+function DrawTextRightAt(X,Y,Text,Color){
+    mainContext.font = "20px Courier New";
+    mainContext.fillStyle = Color;
+    var dims=mainContext.measureText(Text);
+    mainContext.fillText(Text,X-dims.width,Y+20/2);
+}
+function DrawText(X,Y,Text,Color){
+    mainContext.font = "20px Courier New";
+    mainContext.fillStyle = Color;
+    var dims=mainContext.measureText(Text);
+    mainContext.fillText(Text,X,Y+20);
+}
+function DrawBit(X,Y,Value,State,Size){
+    var Width,Height,Color;
+    Value=Math.sqrt(AmplitudeSquaredRealOrComplex(Value));//Value=Math.abs(Value);
+    if(State=="0"){
+        Width=Size;
+        Height=Size/3;
+        Color='rgba(0, 0, 255, '+Value+')';
+    }
+    if(State=="1"){
+        Width=Size/3;
+        Height=Size;
+        Color='rgba(255, 0, 0, '+Value+')';
+    }                
+    DrawEllipse(X,Y,Width+4,Height+4,'rgba(255, 255, 255, 1)');
+    DrawEllipse(X,Y,Width,Height,'rgba(0, 0, 0, 1)');
+    DrawEllipse(X,Y,Width,Height,Color);
+}
+var BitSize=20;
+var BitX0=80;
+var BitY0=10;
+var ClickI0=4;//2;
+var ClickJ0=2;//1;
+var BitHorSpacing=25;
+var BitVertSpacing=25;
+var NumOfBits=QSystem.names.length;
+var NumOfStates=QSystem.states.length;
+
+QSystemUpdated=false;
+
+var test=[1,2,3,4];
+var ClickI=-1,ClickJ=-1;
+
+var DisableDrag=false;
+BitsSeparable=[false];
+
+function ShannonEntropy(QSystem){    
+    // Self-information of event x that has probability P(x) is log(1/P(x)) = -log(P(x)).
+    // Ex: if in a desert, the prediction "it will rain today" contains a lot more information than if in a rain forest.
+    // For log base 2, for 2 coins:  log(1/.5)+log(1/.5)=2=log(1/.25)=calculating 4 coin system all at once.
+    // Shannon Entropy: -sum[i=1 to n](P(i)*log(P(i))   (note: sum(P(i))=1 since they are probabilities).
+    // If all micro-states equally probable, we get p[i]=1/n and whole sum = ln(n)
+    // With 3 bits and bringing "-" inside log:  sum[outcomes i]( (1/8) log(1/(1/8) )
+    //                                         = sum[8 times]( (1/8)*3 ) = 3
+    //Ex: QSystem={"states":[[0,"00"],[0,"01"],[1,"10"],[0,"11"]],"names":["a","b"]}
+    var res=0;
+    var prob;
+    var total_possible_states=Math.pow(2,QSystem["names"].length);
+    for(var i=0;i<QSystem["states"].length;i++){
+        prob=AmplitudeSquaredRealOrComplex(QSystem["states"][i][0]);
+        //console.log("prob: "+prob+" prob*log2 prob "+(prob*Math.log2(prob)));
+        if(prob>0)
+            res+=-prob*Math.log2(prob);        
+    }
+    return res;
+}
+
+
+//  document.getElementById("TransformTextDisplayMathematical").innerHTML=QTransformToMath(QTransform);
+
+function DisplRnd(n){
+    return Math.round(n*1000)/1000;
+}
+function DrawQSystem(QSystem){
+    NumOfBits=QSystem.names.length;
+    NumOfStates=QSystem.states.length;
+    var x0,y0,AmpRtot=0,AmpR2tot=0,ampR=0,ampR2=0,ampI=0,ampI2=0;//ampI for complex/imaginary part
+    var LineLen=BitVertSpacing/2-1+2;
+    for(var i=0;i<NumOfStates;i++){//complex value of each row (as number and visually)
+        x0=BitX0;
+        y0=BitY0+(i+ClickI0)*BitVertSpacing;
+        if(Array.isArray(QSystem.states[i][0])){                
+            ampR=QSystem.states[i][0][0];//Math.round(QSystem.states[i][0][0]*1000)/1000;
+            ampI=QSystem.states[i][0][1];//Math.round(QSystem.states[i][0][1]*1000)/1000;
+        }
+        else{
+            ampR=QSystem.states[i][0];//Math.round(QSystem.states[i][0]*1000)/1000;
+            ampI=0;
+        }
+        // if(QSystemUpdated){
+        //     console.log("DrawQSystem i "+i+" ampR "+ampR+" ampI "+ampI+" is_ar "+Array.isArray(QSystem.states[i][0])+" ampl "+JSON.stringify(QSystem.states[i][0]));
+        // }
+        if(!ShowAmplitudeSquared){
+            var amp=Math.sqrt(ampR*ampR+ampI*ampI);
+            DrawTextRightAt(x0,y0,DisplRnd(amp),'#F6F6F6');
+            x0+=.75*BitHorSpacing;
+            DrawCircle(x0,y0,3,"green");//dustin  
+            if(amp<.3 && amp>=1/1000)
+                DrawLine(x0,y0,x0+ampR*LineLen*(.3/amp),y0+ampI*LineLen*(.3/amp),"white");
+            else
+                DrawLine(x0,y0,x0+ampR*LineLen,y0+ampI*LineLen,"white");
+        }
+        else{
+            DrawTextRightAt(x0,y0,DisplRnd(ampR*ampR+ampI*ampI),'#F6F6F6');
+            x0+=.75*BitHorSpacing;
+            DrawCircle(x0,y0,3,"green");
+            DrawLine(x0,y0,x0+(ampR*ampR+ampI*ampI)*LineLen,y0,"white");
+        }
+    }        
+    
+    
+    
+    for(var j=0;j<BitsSeparable.length;j++){//complex values of column (above each column name)
+        x0=BitX0+(j+ClickJ0)*BitHorSpacing;
+        y0=BitY0+(ClickI0-4)*BitVertSpacing;
+        DrawTextCenteredAt(x0,y0,BitsSeparable[j]?'-':'','#F6F6F6');    
+        y0+=BitHorSpacing;            
+        AmpRtot=0;
+        AmpR2tot=0;
+        var AmpSqu;
+        for(var i=0;i<NumOfStates;i++){
+            if(Array.isArray(QSystem.states[i][0])){
+                ampR=QSystem.states[i][0][0];
+                ampI=QSystem.states[i][0][1];
+            }
+            else{
+                ampR=QSystem.states[i][0];
+                ampI=0;
+            }
+            //if(QSystemUpdated)
+            //    console.log("j: "+j+",("+i+") Rtot: "+AmpRtot+", R2tot: "+AmpR2tot);
+            if(QSystem.states[i][1].charAt(j)=='0'){
+                AmpSqu=ampR*ampR+ampI*ampI;
+                AmpRtot+=AmpSqu;//ampR*ampR+ampI*ampI;
+                if(Math.abs(ampR)>=1/NumOfStates/4)
+                    ampR=Math.max(Math.abs(ampR),5/LineLen)*Math.sign(ampR);
+                if(Math.abs(ampI)>=1/NumOfStates/4)
+                    ampI=Math.max(Math.abs(ampI),5/LineLen)*Math.sign(ampI);
+                DrawLine(x0,(y0),x0+ampR*(BitVertSpacing/2),(y0)+ampI*LineLen,"white");
+            }
+            else{
+                AmpSqu=ampR*ampR+ampI*ampI;
+                AmpR2tot+=AmpSqu;//ampR*ampR+ampI*ampI;
+                if(Math.abs(ampR)>=1/NumOfStates/4)
+                    ampR=Math.max(Math.abs(ampR),5/LineLen)*Math.sign(ampR);
+                if(Math.abs(ampI)>=1/NumOfStates/4)
+                    ampI=Math.max(Math.abs(ampI),5/LineLen)*Math.sign(ampI);
+                DrawLine(x0,(y0+BitHorSpacing),x0+ampR*LineLen,(y0+BitHorSpacing)+ampI*LineLen,"white");
+            }        
+            //if(QSystemUpdated)
+            //    console.log("j: "+j+",("+i+") Rtot: "+AmpRtot+", R2tot: "+AmpR2tot);
+        }
+        //if(QSystemUpdated)
+        //    console.log("done j: "+j+", Rtot: "+AmpRtot+", R2tot: "+AmpR2tot);
+        DrawCircle(x0,y0,3,"white");
+        DrawCircle(x0,y0,2,'rgba(0, 0, 255,'+(Math.floor(AmpRtot*255))+')');            
+        y0+=BitHorSpacing;
+        DrawCircle(x0,y0,3,"white");
+        DrawCircle(x0,y0,2,'rgba(255, 0, 0, '+(Math.floor(AmpR2tot*255))+')');
+    }
+    
+    if(QSystemUpdated){
+        QSystemUpdated=false;
+        document.getElementById("StatesTextDisplay").innerHTML="QSystem="+JSON.stringify(QSystem);    
+        BitsSeparable=CheckWhichQbitsSeparable(QSystem);
+        document.getElementById("StatesTextDisplayMathematical").innerHTML=QSystemToMath(QSystem);
+        console.log(BitsSeparable);
+        QGateTotalBits=QSystem.names.length;
+
+        TransRecordSvgBkColor = window.getComputedStyle(TransRecordSvg).backgroundColor;
+
+        document.getElementById("EntropyDisplay").innerHTML="Shannon Entropy: "+ShannonEntropy(QSystem);
+
+    }
+    
+    for(var j=0;j<NumOfBits;j++){
+        DrawTextCenteredAt(BitX0+(j+ClickJ0)*BitHorSpacing,BitY0+(ClickI0-1)*BitVertSpacing,QSystem.names[j],'#F6F6F6');
+    }
+    var j=NumOfBits;
+    DrawTextCenteredAt(BitX0+(j+ClickJ0)*BitHorSpacing,BitY0+(ClickI0-1)*BitVertSpacing,"+",'#F6F6F6');
+                
+    for(var i=0;i<NumOfStates;i++){//i is vert
+        for(var j=0;j<NumOfBits;j++){//j is hor                    
+                DrawBit(BitX0+(j+ClickJ0)*BitHorSpacing,BitY0+(i+ClickI0)*BitVertSpacing,QSystem.states[i][0],QSystem.states[i][1].charAt(j),BitSize);
+        }            
+    }    
+    //DrawTextCenteredAt(20,20,DisableDrag?"1":"0",'#F6F6F6');//test
+}
+LastTouchX=0;
+LastTouchY=0;
+function RelativeMousePosition(evt){
+        //https://stackoverflow.com/questions/4780837/is-there-an-equivalent-to-e-pagex-position-for-touchstart-event-as-there-is-fo
+    //https://developer.mozilla.org/en-US/docs/Web/API/Touch
+    var rect = mainCanvas.getBoundingClientRect();
+    //DebugText+="\nrect: \n"+JSON.stringify(rect)   +"\n";
+    //var X=evt.clientX - rect.left;
+    //var Y=evt.clientY - rect.top;
+    
+    if(!isNaN(evt.clientX)){//if it is not a touch screen device
+        //DebugText+="\nevt.clientX,Y: "+(evt.clientX)+","+(evt.clientX)+"\n"; 
+        //DebugText+="x,y: "+(evt.clientX - rect.left)+","+(evt.clientY - rect.top)+"\n"; 
+        LastTouchX=evt.clientX - rect.left;
+        LastTouchY= evt.clientY - rect.top;
+        return{
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+        };
+    }
+    else if(evt.targetTouches.length>0){//if touch screen finger down or drag
+        //DebugText+="\nevt.targetTouches[0].clientX,Y: "+(evt.targetTouches[0].clientX)+","+(evt.targetTouches[0].clientY)   +"\n"; 
+        //DebugText+="x,y: "+(evt.targetTouches[0].clientX-rect.left)+","+(evt.targetTouches[0].clientY-rect.top)   +"\n"; 
+        LastTouchX=evt.targetTouches[0].clientX-rect.left;
+        LastTouchY=evt.targetTouches[0].clientY-rect.top;
+        return{
+        x: evt.targetTouches[0].clientX-rect.left,
+        y: evt.targetTouches[0].clientY-rect.top
+        };            
+    }
+    else{//if touch screen up (works as long as RelativeMousePosition() called in ontouchmove)
+        return{
+        x: LastTouchX,
+        y: LastTouchY
+        };        
+    }
+    }
+function CanvasMouseClickArrayPosition(e){//for mouse click events
+    var I=-1;
+    var J=-1;        
+    var m=RelativeMousePosition(e);                
+    var x,y,mouse_x=m.x,mouse_y=m.y;
+    for(var i=0;i<NumOfStates+ClickI0;i++){                
+        y=BitY0+i*BitVertSpacing;
+        if(Math.abs(y-mouse_y)<BitVertSpacing/2){
+            
+            I=i;
+            break;
+        }
+    }
+    for(var j=0;j<NumOfBits+ClickJ0+1;j++){
+        x=BitX0+j*BitHorSpacing;
+        if(Math.abs(x-mouse_x)<BitHorSpacing/2*.9){
+            J=j;
+            break;
+        }
+    }
+    //alert("mouse_x: "+mouse_x+", mouse_y:"+mouse_y+", i: "+I+", j: "+J);
+    return [I,J];
+}
+
+MouseUpHappened=false;//to deal with wierd way mobile devices work and making compatible with desktop/laptop
+MouseDownHappened=false;//Without this, getting occasional double clicks
+function MouseDown(e){    
+    MouseUpHappened=false;        
+    if(!MouseDownHappened){
+        //DebugText+=" D ";
+        MouseDownHappened=true;
+        var pos=CanvasMouseClickArrayPosition(e);
+        ClickI=pos[0];
+        ClickJ=pos[1];
+        console.log("mosue down i: "+ClickI+" j: "+ClickJ+"\n");
+        if(((ClickI==ClickI0-1 || ClickI==ClickI0-2) && ClickJ>=ClickJ0) || (ClickI>=ClickI0 && ClickJ==ClickJ0-1)){
+            e.preventDefault();
+            DisableDrag=true;
+        }
+        else
+            DisableDrag=false;         
+        //DebugText="ClickI: "+ClickI+" ClickJ: "+ClickJ+"\n";
+    }    
+}//end MouseDown()
+
+
+function AddBit(BitNum=-1){//a special interface function.
+    var alphabetic_num = "a".charCodeAt(0);
+    while(QSystem.names.indexOf(String.fromCharCode(alphabetic_num))>=0){
+        alphabetic_num++;
+    }
+    var NewQbitsSystem={"states": [[1,"0"],[0,"1"]],"names": [String.fromCharCode(alphabetic_num)]};
+    //DebugText+="QSystem=Combine(QSystem,"+JSON.stringify(NewQbitsSystem)+");\n";
+    QSystem=Combine(QSystem,NewQbitsSystem);
+    if(BitNum>=0 && BitNum<=QSystem.names.length-1)
+        MoveQbit(QSystem,QSystem.names.length,BitNum);
+    if(BitNum==-1)
+        return QSystem.names.length-1;
+    else
+        return BitNum;
+}
+function RemoveBit(BitNum){//a special interface function.
+    QSystem=RemoveSeparableQbit(QSystem,BitNum);
+    //DebugText+="QSystem=RemoveSeparableQbit(QSystem,"+(J-ClickJ0)+");\n";
+}
+
+mainCanvas.onmousedown = MouseDown;
+mainCanvas.ontouchstart = MouseDown;
+
+function MouseUpAfterTimeout(e){//need this or even with MouseDownHappened, "u->d->u" happens after release in certain places
+    setTimeout(function(){ MouseUp(e); }, 100);
+}
+function MouseUp(e){
+    MouseDownHappened=false;
+    DisableDrag=false; 
+    if(!MouseUpHappened){
+        //DebugText+=" U ";
+        MouseUpHappened=true;
+        var pos=CanvasMouseClickArrayPosition(e);        
+        var I=pos[0];
+        var J=pos[1];        
+        
+        //DebugText+="final i: "+I+" j: "+J+"\n";
+        console.log("mosue up i: "+I+" j: "+J+"\n");
+        
+        if(ClickI!=-1 && ClickJ!=-1 && I!=-1 && J!=-1){    
+            QSystemUpdated=true;
+            document.getElementById("TransformationData").blur();//to make it check if text has been changed.
+            if(J==ClickJ && J-ClickJ0==NumOfBits && ClickI==I && I==ClickI0-1 && NumOfBits<8){//"+"
+                //on the plus sign
+                //Add something like {"states": [[1,"0"],[1,"1"]],"names": ["c"]}    
+                //Can also make this happen with function AddBit()
+                var alphabetic_num = "a".charCodeAt(0);
+                while(QSystem.names.indexOf(String.fromCharCode(alphabetic_num))>=0){
+                    alphabetic_num++;
+                }
+                var NewQbitsSystem={"states": [[1,"0"],[0,"1"]],"names": [String.fromCharCode(alphabetic_num)]};
+                
+                
+                if(PrintShortForm)
+                    DebugText+="AddBit("+(QSystem.names.length)+");\n";
+                else
+                    DebugText+="QSystem=Combine(QSystem,"+JSON.stringify(NewQbitsSystem)+");\n";
+                
+                QSystem=Combine(QSystem,NewQbitsSystem);
+            }
+            if(ClickI==I && ClickJ==J && I==ClickI0-4 && 0<=J-ClickJ0 && J-ClickJ0<NumOfBits ){//on a minus sign
+                //Can also do this with function RemoveBit(bitnum)
+                QSystem=RemoveSeparableQbit(QSystem,J-ClickJ0);
+                if(PrintShortForm)
+                    DebugText+="RemoveBit("+(J-ClickJ0)+");\n";
+                else
+                    DebugText+="QSystem=RemoveSeparableQbit(QSystem,"+(J-ClickJ0)+");\n";                    
+            }
+            if(J-ClickJ0<NumOfBits && ClickJ-ClickJ0<NumOfBits && ClickI==I){    
+                if(I==ClickI0-1){
+                    if(J!=ClickJ && J>=ClickJ0){                    
+                        if(PrintShortForm)
+                            DebugText+="MoveBit("+(ClickJ-ClickJ0)+","+(J-ClickJ0)+");\n";
+                        else
+                            DebugText+="MoveQbit(QSystem,"+(ClickJ-ClickJ0)+","+(J-ClickJ0)+");\n";
+                        MoveQbit(QSystem,ClickJ-ClickJ0,J-ClickJ0);                        
+                    }
+                    else{
+                        if(J>=ClickJ0){//so also J==ClickJ
+                            var AddToPosList=0;
+                            var q=-1,i;
+                            var QPosList=JSON.parse(document.getElementById("QbitPositionList").value);
+                            if(Array.isArray(QPosList)){
+                                for(i=0;i<QPosList.length;i++){//loop through QPosList [1,2]
+                                    if(QPosList[i]==-1){
+                                        AddToPosList++;
+                                        if(q<0) q=i;
+                                    }
+                                }
+                                if(q<0) q=i;
+                            }
+                            if(AddToPosList>0 || AutoApplyTransform){//add to qbit selection list
+                                if(AutoApplyTransform && AddToPosList==0){//if filled from last time, clear and add one
+                                    QPosList=ClearBits();
+                                    AddToPosList=QPosList.length;
+                                    q=0;    
+                                    console.log("full, so clear them bits: "+JSON.stringify(QPosList));
+                                }
+                                //add selected qbit to next open position
+                                
+                                if(QPosList.indexOf(J-ClickJ0)<0){//so no 2 bits will be put into transform twice
+                                    QPosList[q]=J-ClickJ0;
+                                    document.getElementById("QbitPositionList").value=JSON.stringify(QPosList);
+                                    if(AddToPosList==1 && AutoApplyTransform){//if in auto mode and list full, then run transform.
+                                        ApplySpecifiedTransformation();//apply transform and clear if in "auto" mode
+                                        
+                                    }    
+                                }                                
+                                
+                            }
+                        }
+                        else{//order by amplitude
+                            DebugText+="OrderReversedStatesByAmplitude(QSystem);\n";
+                            OrderReversedStatesByAmplitude(QSystem);
+                        }
+                    }
+                }
+                else if(I==ClickI0-2 || I==ClickI0-3){
+                    if(J>=ClickJ0){
+                        //order by QBit
+                        DebugText+="OrderByQbit(QSystem,"+(J-ClickJ0)+");\n"
+                        OrderByQbit(QSystem,J-ClickJ0);                        
+                    }
+                }
+            }           
+            if(I>=ClickI0 && I-ClickI0<NumOfStates && I!=ClickI && ClickJ<ClickJ0 && J<ClickJ0){        
+                DebugText+="MoveState(QSystem,"+(ClickI-ClickI0)+","+(I-ClickI0)+");\n";
+                MoveState(QSystem,ClickI-ClickI0, I-ClickI0);                    
+            }          
+        }
+    }        
+}//end MouseUp()
+
+//https://stackoverflow.com/questions/9251590/prevent-page-scroll-on-drag-in-ios-and-android
+//https://stackoverflow.com/questions/7056026/variation-of-e-touches-e-targettouches-and-e-changedtouches
+//http://www.javascriptkit.com/javatutors/touchevents.shtml
+mainCanvas.onmouseup = MouseUpAfterTimeout;//MouseUp;
+mainCanvas.ontouchend=MouseUpAfterTimeout;//MouseUp;
+function MouseMove(e){
+    if(DisableDrag)
+        e.preventDefault();        
+    RelativeMousePosition(e);
+}
+
+mainCanvas.onmousemove = MouseMove;
+mainCanvas.ontouchmove=MouseMove;//technically only this needed since mouse won't drag screen on computer
+
+//mainCanvas.style["-webkit-overflow-scroll"] = "blue"
+//-webkit-overflow-scroll:touch;   //if you want a text area to be able to scroll in iphone
+
+// https://www.html5rocks.com/en/mobile/touchandmouse/
+
+//RelativeMousePosition() needs to be changed depending on if computer or phone
+
+
+function draw() {
+    mainCanvas.width=""+(BitX0+3*BitHorSpacing+NumOfBits*BitHorSpacing);//note: adjusting these clears canvas
+    mainCanvas.height=""+(BitY0+4*BitVertSpacing+NumOfStates*BitVertSpacing);
+    TransRecordSvg.setAttribute("width", "100%"/*mainCanvas.width*/);
+    TransRecordSvg.setAttribute("height", mainCanvas.height);
+    mainContext.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    mainContext.fillStyle = '#000000';// '#F6F6F6';
+    mainContext.fillRect(0, 0, mainCanvas.width, mainCanvas.height);    
+    //DrawText(10,2,DebugText,'#F6F6F6');
+    
+    //only change DebugOut.value if DebugText is different but DebugOut.value isn't being manually edited
+    if(DebugOut.value!=DebugText){
+        if(DebugText!=DebugTextPrev){
+            DebugOut.value=DebugText;
+        }
+        else
+            DebugText=DebugOut.value;
+    }
+    DebugTextPrev=DebugText;
+    
+    DrawQSystem(QSystem);
+    
+    // call the draw function again!
+    requestAnimationFrame(draw);
+}
+draw();
+//see separate notes file 
+    
+</script>
+
+
+
+
